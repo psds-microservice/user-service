@@ -1,10 +1,13 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 )
+
+const defaultJWTSecret = "change-me-in-production"
 
 type Config struct {
 	AppHost    string // APP_HOST
@@ -34,7 +37,7 @@ func Load() (*Config, error) {
 		AppEnv:     getEnv("APP_ENV", "development"),
 		AppDebug:   getEnv("APP_DEBUG", "false") == "true",
 		LogLevel:   getEnv("LOG_LEVEL", "info"),
-		JWTSecret:  getEnv("JWT_SECRET", "change-me-in-production"),
+		JWTSecret:  getEnv("JWT_SECRET", defaultJWTSecret),
 		JWTAccess:  getEnv("JWT_ACCESS_TTL", "15m"),
 		JWTRefresh: getEnv("JWT_REFRESH_TTL", "168h"),
 		DB: struct {
@@ -54,6 +57,28 @@ func Load() (*Config, error) {
 		},
 	}
 	return c, nil
+}
+
+// Validate проверяет обязательные поля и предупреждает о небезопасных значениях в проде.
+func (c *Config) Validate() error {
+	if c.DB.Host == "" {
+		return errors.New("config: DB_HOST is required")
+	}
+	if c.DB.User == "" {
+		return errors.New("config: DB_USER is required")
+	}
+	if c.DB.Database == "" {
+		return errors.New("config: DB_DATABASE is required")
+	}
+	if c.AppEnv == "production" {
+		if c.JWTSecret == "" || c.JWTSecret == defaultJWTSecret {
+			return errors.New("config: in production JWT_SECRET must be set and must not be the default value")
+		}
+		if c.DB.Password == "" {
+			return errors.New("config: in production DB_PASSWORD is required")
+		}
+	}
+	return nil
 }
 
 // firstEnv returns the first non-empty env value from keys, else def (last argument).

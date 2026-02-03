@@ -32,6 +32,9 @@ func runAPI(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
 	app, err := application.NewAPI(cfg)
 	if err != nil {
 		return err

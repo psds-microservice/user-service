@@ -12,6 +12,7 @@ import (
 	"github.com/psds-microservice/user-service/internal/mapper"
 	"github.com/psds-microservice/user-service/internal/model"
 	"github.com/psds-microservice/user-service/internal/repository"
+	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
 type IUserService interface {
@@ -67,14 +68,14 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 
 	role := req.Role
 	if role == "" {
-		role = "client"
+		role = constants.RoleClient
 	}
-	if role != "client" && role != "operator" && role != "admin" {
-		role = "client"
+	if role != constants.RoleClient && role != constants.RoleOperator && role != constants.RoleAdmin {
+		role = constants.RoleClient
 	}
 	operatorStatus := ""
-	if role == "operator" {
-		operatorStatus = "pending"
+	if role == constants.RoleOperator {
+		operatorStatus = constants.OperatorStatusPending
 	}
 
 	user := &model.User{
@@ -83,7 +84,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		Email:          req.Email,
 		Phone:          req.Phone,
 		PasswordHash:   hashedPassword,
-		Status:         "active",
+		Status:         constants.UserStatusActive,
 		Role:           role,
 		OperatorStatus: operatorStatus,
 		MaxSessions:    1,
@@ -219,7 +220,7 @@ func (s *UserService) UpdateAvailability(ctx context.Context, userID string, ava
 	if err != nil || user == nil {
 		return nil, errors.New("user not found")
 	}
-	if user.Role != "operator" {
+	if user.Role != constants.RoleOperator {
 		return nil, errors.New("user is not an operator")
 	}
 	user.IsAvailable = available
@@ -231,7 +232,7 @@ func (s *UserService) UpdateAvailability(ctx context.Context, userID string, ava
 }
 
 func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
-	if status != "pending" && status != "verified" && status != "blocked" {
+	if status != constants.OperatorStatusPending && status != constants.OperatorStatusVerified && status != constants.OperatorStatusBlocked {
 		return nil, errors.New("invalid operator status")
 	}
 	uid, err := uuid.Parse(operatorID)
@@ -242,7 +243,7 @@ func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, sta
 	if err != nil || user == nil {
 		return nil, errors.New("user not found")
 	}
-	if user.Role != "operator" {
+	if user.Role != constants.RoleOperator {
 		return nil, errors.New("user is not an operator")
 	}
 	user.OperatorStatus = status
@@ -289,7 +290,7 @@ func (s *UserService) ValidateUserSession(ctx context.Context, userID, sessionEx
 	if err != nil {
 		return false, err
 	}
-	if user.Role == "operator" && (user.OperatorStatus != "verified" || !user.IsAvailable) {
+	if user.Role == constants.RoleOperator && (user.OperatorStatus != constants.OperatorStatusVerified || !user.IsAvailable) {
 		return false, nil
 	}
 	if int(activeCount) >= user.MaxSessions {
@@ -335,10 +336,10 @@ func (s *UserService) CreateSession(ctx context.Context, userID string, req *dto
 	if err != nil {
 		return nil, err
 	}
-	if user.Role == "client" && req.SessionType == "streaming" && activeCount >= 1 {
+	if user.Role == constants.RoleClient && req.SessionType == "streaming" && activeCount >= 1 {
 		return nil, errors.New("client may have only one active streaming session")
 	}
-	if user.Role == "operator" && (user.OperatorStatus != "verified" || !user.IsAvailable) {
+	if user.Role == constants.RoleOperator && (user.OperatorStatus != constants.OperatorStatusVerified || !user.IsAvailable) {
 		return nil, errors.New("operator must be verified and available")
 	}
 	if int(activeCount) >= user.MaxSessions {

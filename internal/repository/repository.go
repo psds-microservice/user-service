@@ -9,6 +9,7 @@ import (
 
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/model"
+	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
 type IUserRepository interface {
@@ -126,7 +127,7 @@ func (r *UserRepository) ListAvailableOperators(ctx context.Context, limit, offs
 	var count int64
 	query := r.db.WithContext(ctx).Model(&model.User{}).
 		Where("role = ? AND operator_status = ? AND is_available = ? AND is_active = ?",
-			"operator", "verified", true, true)
+			constants.RoleOperator, constants.OperatorStatusVerified, true, true)
 	if err := query.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}

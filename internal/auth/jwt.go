@@ -6,14 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/psds-microservice/user-service/pkg/constants"
 )
-
-// Permissions по ролям (promt.txt).
-var permissionsByRole = map[string][]string{
-	"client":   {"stream:create", "stream:join", "chat:send", "file:upload"},
-	"operator": {"stream:join", "chat:send", "file:upload", "consultation:join"},
-	"admin":    {"stream:create", "stream:join", "chat:send", "file:upload", "consultation:join", "operator:verify", "operator:stats"},
-}
 
 // Claims — JWT claims (promt.txt).
 type Claims struct {
@@ -59,9 +53,9 @@ func NewConfig(secret, accessTTL, refreshTTL string) (Config, error) {
 // GeneratePair выдаёт access и refresh токены.
 func (c Config) GeneratePair(userID, email, role, operatorStatus string, isAvailable bool) (access, refresh string, err error) {
 	now := time.Now()
-	perms := permissionsByRole[role]
+	perms := constants.PermissionsByRole[role]
 	if perms == nil {
-		perms = permissionsByRole["client"]
+		perms = constants.PermissionsByRole[constants.RoleClient]
 	}
 
 	accessClaims := &Claims{
@@ -146,4 +140,4 @@ func (c *Claims) HasPermission(perm string) bool {
 }
 
 // IsAdmin возвращает true если роль admin.
-func (c *Claims) IsAdmin() bool { return c.Role == "admin" }
+func (c *Claims) IsAdmin() bool { return c.Role == constants.RoleAdmin }

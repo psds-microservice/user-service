@@ -90,9 +90,6 @@ func NewAPI(cfg *config.Config) (*API, error) {
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("list"),
 	))
-	mux.HandleFunc("/users/create", userHandler.CreateUser)
-	mux.HandleFunc("/users/", userHandler.GetUser)
-	mux.HandleFunc("/login", userHandler.Login)
 	mux.Handle(constants.BasePathAPI+"/", handler.APIv1(userSvc, jwtCfg, blacklist, userHandler))
 
 	httpAddr := cfg.AppHost + ":" + cfg.HTTPPort

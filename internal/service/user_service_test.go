@@ -8,6 +8,7 @@ import (
 
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/model"
+	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
 // StubUserRepository — in-memory репозиторий для тестов (UUID).
@@ -78,7 +79,7 @@ func (r *StubUserRepository) FindByUsername(ctx context.Context, username string
 func (r *StubUserRepository) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*model.User, int64, error) {
 	var list []*model.User
 	for _, u := range r.users {
-		if u.Role == "operator" && u.OperatorStatus == "verified" && u.IsAvailable {
+		if u.Role == constants.RoleOperator && u.OperatorStatus == constants.OperatorStatusVerified && u.IsAvailable {
 			list = append(list, u)
 		}
 	}
