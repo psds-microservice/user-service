@@ -1,0 +1,2 @@
+# Shell scripts must use LF so Docker entrypoints work in Linux containers
+infra/*.sh text eol=lf
