@@ -7,6 +7,7 @@
 package user_service
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -986,7 +987,7 @@ var File_user_service_proto protoreflect.FileDescriptor
 
 const file_user_service_proto_rawDesc = "" +
 	"\n" +
-	"\x12user_service.proto\x12\fuser_service\x1a\x1fgoogle/protobuf/timestamp.proto\"\xec\x01\n" +
+	"\x12user_service.proto\x12\fuser_service\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/api/annotations.proto\"\xec\x01\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -1054,20 +1055,20 @@ const file_user_service_proto_rawDesc = "" +
 	"\fis_available\x18\x02 \x01(\bR\visAvailable\"N\n" +
 	"\x1cUpdateOperatorStatusResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error2\xb0\x06\n" +
-	"\vUserService\x12I\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error2\xf1\b\n" +
+	"\vUserService\x12c\n" +
 	"\n" +
-	"CreateUser\x12\x1f.user_service.CreateUserRequest\x1a\x1a.user_service.UserResponse\x12C\n" +
-	"\aGetUser\x12\x1c.user_service.GetUserRequest\x1a\x1a.user_service.UserResponse\x12I\n" +
+	"CreateUser\x12\x1f.user_service.CreateUserRequest\x1a\x1a.user_service.UserResponse\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/api/v1/users\x12_\n" +
+	"\aGetUser\x12\x1c.user_service.GetUserRequest\x1a\x1a.user_service.UserResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/users/{id}\x12h\n" +
 	"\n" +
-	"UpdateUser\x12\x1f.user_service.UpdateUserRequest\x1a\x1a.user_service.UserResponse\x12O\n" +
+	"UpdateUser\x12\x1f.user_service.UpdateUserRequest\x1a\x1a.user_service.UserResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\x1a\x12/api/v1/users/{id}\x12k\n" +
 	"\n" +
-	"DeleteUser\x12\x1f.user_service.DeleteUserRequest\x1a .user_service.DeleteUserResponse\x12?\n" +
-	"\x05Login\x12\x1a.user_service.LoginRequest\x1a\x1a.user_service.UserResponse\x12j\n" +
-	"\x13ValidateUserSession\x12(.user_service.ValidateUserSessionRequest\x1a).user_service.ValidateUserSessionResponse\x12g\n" +
-	"\x12UpdateUserPresence\x12'.user_service.UpdateUserPresenceRequest\x1a(.user_service.UpdateUserPresenceResponse\x12p\n" +
-	"\x15GetAvailableOperators\x12*.user_service.GetAvailableOperatorsRequest\x1a+.user_service.GetAvailableOperatorsResponse\x12m\n" +
-	"\x14UpdateOperatorStatus\x12).user_service.UpdateOperatorStatusRequest\x1a*.user_service.UpdateOperatorStatusResponseBMZKgithub.com/psds-microservice/user-service/pkg/gen/user_service;user_serviceb\x06proto3"
+	"DeleteUser\x12\x1f.user_service.DeleteUserRequest\x1a .user_service.DeleteUserResponse\"\x1a\x82\xd3\xe4\x93\x02\x14*\x12/api/v1/users/{id}\x12^\n" +
+	"\x05Login\x12\x1a.user_service.LoginRequest\x1a\x1a.user_service.UserResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12\x90\x01\n" +
+	"\x13ValidateUserSession\x12(.user_service.ValidateUserSessionRequest\x1a).user_service.ValidateUserSessionResponse\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/api/v1/sessions/validate\x12\x94\x01\n" +
+	"\x12UpdateUserPresence\x12'.user_service.UpdateUserPresenceRequest\x1a(.user_service.UpdateUserPresenceResponse\"+\x82\xd3\xe4\x93\x02%:\x01*\x1a /api/v1/users/{user_id}/presence\x12\x95\x01\n" +
+	"\x15GetAvailableOperators\x12*.user_service.GetAvailableOperatorsRequest\x1a+.user_service.GetAvailableOperatorsResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/operators/available\x12\xa2\x01\n" +
+	"\x14UpdateOperatorStatus\x12).user_service.UpdateOperatorStatusRequest\x1a*.user_service.UpdateOperatorStatusResponse\"3\x82\xd3\xe4\x93\x02-:\x01*\x1a(/api/v1/operators/{user_id}/availabilityBMZKgithub.com/psds-microservice/user-service/pkg/gen/user_service;user_serviceb\x06proto3"
 
 var (
 	file_user_service_proto_rawDescOnce sync.Once

@@ -119,3 +119,38 @@ func (h *OperatorsHandler) Stats(w http.ResponseWriter, r *http.Request) {
 		"total":     total,
 	})
 }
+
+func (h *OperatorsHandler) SetAvailabilityByID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	claims := middleware.GetClaims(r.Context())
+	if claims == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if !claims.IsAdmin() {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	operatorID := r.PathValue("id")
+	if operatorID == "" {
+		http.Error(w, "operator id required", http.StatusBadRequest)
+		return
+	}
+	var req struct {
+		IsAvailable bool `json:"is_available"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	user, err := h.svc.UpdateAvailability(r.Context(), operatorID, req.IsAvailable)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}

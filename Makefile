@@ -1,5 +1,5 @@
 .PHONY: help init build run run-dev migrate migrate-create worker test test-api test-db \
- version clean proto proto-build proto-generate proto-pkg proto-pkg-simple proto-pkg-script proto-clean proto-help lint vet fmt docker-build \
+ version clean proto proto-build proto-generate proto-openapi proto-pkg proto-pkg-simple proto-pkg-script proto-clean proto-help lint vet fmt docker-build \
  docker-run docker-compose-up docker-compose-down install-deps health-check \
  update generate-docs bench load-test security-check dev
 
@@ -14,6 +14,9 @@ PROTO_ROOT = pkg/user_service
 # Сгенерированные Go-файлы из proto (go_package → pkg/gen/user_service при module=)
 GEN_DIR = pkg/gen/user_service
 GO_MODULE = github.com/psds-microservice/user-service
+# OpenAPI/Swagger из proto (protoc-gen-openapiv2)
+OPENAPI_OUT = api
+OPENAPI_SPEC = $(OPENAPI_OUT)/openapi.json
 
 # Главная цель по умолчанию
 .DEFAULT_GOAL := help
@@ -55,7 +58,22 @@ help:
 	@echo "  make vet            - Проверка кода"
 	@echo "  make fmt            - Форматирование кода"
 	@echo "  make security-check - Проверка безопасности"
+	@echo "  make proto-openapi - Сгенерировать OpenAPI/Swagger из .proto (protoc-gen-openapiv2)"
 	@echo ""
+
+## 📄 OpenAPI/Swagger из proto (единый источник правды — .proto)
+proto-openapi:
+	@command -v protoc >/dev/null 2>&1 || (echo "Установите protoc" && exit 1); \
+	command -v protoc-gen-openapiv2 >/dev/null 2>&1 || (echo "Установите: go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest" && exit 1)
+	@mkdir -p $(OPENAPI_OUT)
+	@PATH="$$(go env GOPATH)/bin:$$PATH"; \
+	protoc -I $(PROTO_ROOT) -I third_party \
+		--openapiv2_out=$(OPENAPI_OUT) \
+		--openapiv2_opt=logtostderr=true \
+		--openapiv2_opt=allow_merge=true \
+		--openapiv2_opt=merge_file_name=openapi \
+		$(PROTO_ROOT)/user_service.proto
+	@if [ -f $(OPENAPI_OUT)/openapi.swagger.json ]; then cp $(OPENAPI_OUT)/openapi.swagger.json $(OPENAPI_OUT)/openapi.json; echo "✅ OpenAPI: $(OPENAPI_SPEC)"; elif [ -f $(OPENAPI_OUT)/openapi.json ]; then echo "✅ OpenAPI: $(OPENAPI_SPEC)"; else echo "⚠ Проверьте вывод protoc выше"; fi
 
 ## 📦 Proto файлы (образ из https://github.com/psds-microservice/infra)
 proto: proto-build proto-generate
@@ -92,7 +110,7 @@ proto-generate-local:
 	for f in $(PROTO_ROOT)/*.proto; do \
 		[ -f "$$f" ] || continue; \
 		echo "📁 Processing: $$f"; \
-		protoc -I $(PROTO_ROOT) --go_out=. --go_opt=module=$(GO_MODULE) --go-grpc_out=. --go-grpc_opt=module=$(GO_MODULE) "$$f" || exit 1; \
+		protoc -I $(PROTO_ROOT) -I third_party --go_out=. --go_opt=module=$(GO_MODULE) --go-grpc_out=. --go-grpc_opt=module=$(GO_MODULE) "$$f" || exit 1; \
 	done
 	@echo "✅ Generated in $(GEN_DIR)"
 
@@ -109,7 +127,7 @@ proto-generate-docker:
 		PROTO_ROOT="$(PROTO_ROOT)" MODULE="$(GO_MODULE)" && \
 		find $$PROTO_ROOT -name "*.proto" 2>/dev/null | while read f; do \
 		echo "📁 Processing: $$f" && \
-		protoc -I $$PROTO_ROOT -I /include \
+		protoc -I $$PROTO_ROOT -I third_party -I /include \
 		--go_out=. --go_opt=module=$$MODULE \
 		--go-grpc_out=. --go-grpc_opt=module=$$MODULE \
 		"$$f" || exit 1; \
@@ -309,6 +327,7 @@ update:
 	go mod tidy
 	go mod vendor
 	$(MAKE) proto
+	@$(MAKE) proto-openapi 2>/dev/null || true
 	@echo "✅ Dependencies updated"
 
 init: install-deps proto

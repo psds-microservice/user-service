@@ -17,6 +17,7 @@ type IUserSessionRepository interface {
 	ListByUserID(ctx context.Context, userID string, limit, offset int) ([]*model.UserSession, int64, error)
 	CountActiveByUserID(ctx context.Context, userID string) (int64, error)
 	ListActiveByUserID(ctx context.Context, userID string) ([]*model.UserSession, error)
+	FindActiveByUserAndExternalID(ctx context.Context, userID, sessionExternalID string) (*model.UserSession, error)
 }
 
 type UserSessionRepository struct {
@@ -82,4 +83,17 @@ func (r *UserSessionRepository) ListActiveByUserID(ctx context.Context, userID s
 	err := r.db.WithContext(ctx).Where("user_id = ? AND left_at IS NULL", userID).
 		Order("joined_at DESC").Find(&list).Error
 	return list, err
+}
+
+func (r *UserSessionRepository) FindActiveByUserAndExternalID(ctx context.Context, userID, sessionExternalID string) (*model.UserSession, error) {
+	var s model.UserSession
+	err := r.db.WithContext(ctx).Where("user_id = ? AND session_external_id = ? AND left_at IS NULL",
+		userID, sessionExternalID).First(&s).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &s, nil
 }

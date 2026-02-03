@@ -5,19 +5,61 @@ package user_service;
 option go_package = "github.com/psds-microservice/user-service/pkg/gen/user_service;user_service";
 
 import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
 
+// UserService — пользователи, аутентификация, операторы, сессии. REST-маппинг в google.api.http.
 service UserService {
-  rpc CreateUser (CreateUserRequest) returns (UserResponse);
-  rpc GetUser (GetUserRequest) returns (UserResponse);
-  rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
-  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
-  rpc Login (LoginRequest) returns (UserResponse);
-  // Интеграция session-manager
-  rpc ValidateUserSession (ValidateUserSessionRequest) returns (ValidateUserSessionResponse);
-  rpc UpdateUserPresence (UpdateUserPresenceRequest) returns (UpdateUserPresenceResponse);
-  // Интеграция operator-pool
-  rpc GetAvailableOperators (GetAvailableOperatorsRequest) returns (GetAvailableOperatorsResponse);
-  rpc UpdateOperatorStatus (UpdateOperatorStatusRequest) returns (UpdateOperatorStatusResponse);
+  rpc CreateUser (CreateUserRequest) returns (UserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/users"
+      body: "*"
+    };
+  }
+  rpc GetUser (GetUserRequest) returns (UserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{id}"
+    };
+  }
+  rpc UpdateUser (UpdateUserRequest) returns (UserResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/users/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/users/{id}"
+    };
+  }
+  rpc Login (LoginRequest) returns (UserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+  rpc ValidateUserSession (ValidateUserSessionRequest) returns (ValidateUserSessionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/sessions/validate"
+      body: "*"
+    };
+  }
+  rpc UpdateUserPresence (UpdateUserPresenceRequest) returns (UpdateUserPresenceResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/users/{user_id}/presence"
+      body: "*"
+    };
+  }
+  rpc GetAvailableOperators (GetAvailableOperatorsRequest) returns (GetAvailableOperatorsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/operators/available"
+    };
+  }
+  rpc UpdateOperatorStatus (UpdateOperatorStatusRequest) returns (UpdateOperatorStatusResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/operators/{user_id}/availability"
+      body: "*"
+    };
+  }
 }
 
 message User {

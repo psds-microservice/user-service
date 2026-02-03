@@ -73,6 +73,50 @@ func (s *Server) Login(ctx context.Context, req *user_service.LoginRequest) (*us
 	return toProtoUserResponse(resp), nil
 }
 
+func (s *Server) ValidateUserSession(ctx context.Context, req *user_service.ValidateUserSessionRequest) (*user_service.ValidateUserSessionResponse, error) {
+	allowed, err := s.svc.ValidateUserSession(ctx, req.GetUserId(), req.GetSessionExternalId(), req.GetParticipantRole())
+	if err != nil {
+		return &user_service.ValidateUserSessionResponse{Allowed: false, Error: err.Error()}, nil
+	}
+	return &user_service.ValidateUserSessionResponse{Allowed: allowed}, nil
+}
+
+func (s *Server) UpdateUserPresence(ctx context.Context, req *user_service.UpdateUserPresenceRequest) (*user_service.UpdateUserPresenceResponse, error) {
+	err := s.svc.UpdatePresence(ctx, req.GetUserId(), req.GetIsOnline())
+	if err != nil {
+		return &user_service.UpdateUserPresenceResponse{Success: false, Error: err.Error()}, nil
+	}
+	return &user_service.UpdateUserPresenceResponse{Success: true}, nil
+}
+
+func (s *Server) GetAvailableOperators(ctx context.Context, req *user_service.GetAvailableOperatorsRequest) (*user_service.GetAvailableOperatorsResponse, error) {
+	limit := int(req.GetLimit())
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := int(req.GetOffset())
+	if offset < 0 {
+		offset = 0
+	}
+	list, total, err := s.svc.ListAvailableOperators(ctx, limit, offset)
+	if err != nil {
+		return &user_service.GetAvailableOperatorsResponse{Error: err.Error()}, nil
+	}
+	operators := make([]*user_service.UserResponse, len(list))
+	for i := range list {
+		operators[i] = toProtoUserResponse(list[i])
+	}
+	return &user_service.GetAvailableOperatorsResponse{Operators: operators, Total: total}, nil
+}
+
+func (s *Server) UpdateOperatorStatus(ctx context.Context, req *user_service.UpdateOperatorStatusRequest) (*user_service.UpdateOperatorStatusResponse, error) {
+	_, err := s.svc.UpdateAvailability(ctx, req.GetUserId(), req.GetIsAvailable())
+	if err != nil {
+		return &user_service.UpdateOperatorStatusResponse{Success: false, Error: err.Error()}, nil
+	}
+	return &user_service.UpdateOperatorStatusResponse{Success: true}, nil
+}
+
 func toProtoUserResponse(r *dto.UserResponse) *user_service.UserResponse {
 	if r == nil {
 		return nil

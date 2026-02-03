@@ -30,7 +30,7 @@ func Load() (*Config, error) {
 	c := &Config{
 		AppHost:    getEnv("APP_HOST", "0.0.0.0"),
 		HTTPPort:   firstEnv("APP_PORT", "HTTP_PORT", "8080"),
-		GRPCPort:   firstEnv("GRPC_PORT", "METRICS_PORT", "9090"),
+		GRPCPort:   firstEnv("GRPC_PORT", "METRICS_PORT", "9091"),
 		AppEnv:     getEnv("APP_ENV", "development"),
 		AppDebug:   getEnv("APP_DEBUG", "false") == "true",
 		LogLevel:   getEnv("LOG_LEVEL", "info"),

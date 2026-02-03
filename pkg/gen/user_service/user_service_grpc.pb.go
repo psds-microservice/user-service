@@ -33,16 +33,16 @@ const (
 // UserServiceClient is the client API for UserService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// UserService — пользователи, аутентификация, операторы, сессии. REST-маппинг в google.api.http.
 type UserServiceClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*UserResponse, error)
-	// Интеграция session-manager
 	ValidateUserSession(ctx context.Context, in *ValidateUserSessionRequest, opts ...grpc.CallOption) (*ValidateUserSessionResponse, error)
 	UpdateUserPresence(ctx context.Context, in *UpdateUserPresenceRequest, opts ...grpc.CallOption) (*UpdateUserPresenceResponse, error)
-	// Интеграция operator-pool
 	GetAvailableOperators(ctx context.Context, in *GetAvailableOperatorsRequest, opts ...grpc.CallOption) (*GetAvailableOperatorsResponse, error)
 	UpdateOperatorStatus(ctx context.Context, in *UpdateOperatorStatusRequest, opts ...grpc.CallOption) (*UpdateOperatorStatusResponse, error)
 }
@@ -148,16 +148,16 @@ func (c *userServiceClient) UpdateOperatorStatus(ctx context.Context, in *Update
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
+//
+// UserService — пользователи, аутентификация, операторы, сессии. REST-маппинг в google.api.http.
 type UserServiceServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*UserResponse, error)
 	GetUser(context.Context, *GetUserRequest) (*UserResponse, error)
 	UpdateUser(context.Context, *UpdateUserRequest) (*UserResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	Login(context.Context, *LoginRequest) (*UserResponse, error)
-	// Интеграция session-manager
 	ValidateUserSession(context.Context, *ValidateUserSessionRequest) (*ValidateUserSessionResponse, error)
 	UpdateUserPresence(context.Context, *UpdateUserPresenceRequest) (*UpdateUserPresenceResponse, error)
-	// Интеграция operator-pool
 	GetAvailableOperators(context.Context, *GetAvailableOperatorsRequest) (*GetAvailableOperatorsResponse, error)
 	UpdateOperatorStatus(context.Context, *UpdateOperatorStatusRequest) (*UpdateOperatorStatusResponse, error)
 	mustEmbedUnimplementedUserServiceServer()

@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/psds-microservice/user-service/internal/dto"
+	"github.com/psds-microservice/user-service/internal/mapper"
 	"github.com/psds-microservice/user-service/internal/model"
 	"github.com/psds-microservice/user-service/internal/repository"
 )
@@ -24,6 +25,7 @@ type IUserService interface {
 	UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error)
 	VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error)
 	UpdatePresence(ctx context.Context, userID string, isOnline bool) error
+	ValidateUserSession(ctx context.Context, userID, sessionExternalID, participantRole string) (allowed bool, err error)
 	GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error)
 	GetActiveSessions(ctx context.Context, userID string) ([]*dto.UserSessionResponse, error)
 	CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error)
@@ -95,7 +97,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		return nil, err
 	}
 
-	return toUserResponse(createdUser), nil
+	return mapper.UserToResponse(createdUser), nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
@@ -140,7 +142,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		return nil, err
 	}
 
-	return toUserResponse(updatedUser), nil
+	return mapper.UserToResponse(updatedUser), nil
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id string) error {
@@ -163,7 +165,7 @@ func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse
 	if user == nil {
 		return nil, errors.New("user not found")
 	}
-	return toUserResponse(user), nil
+	return mapper.UserToResponse(user), nil
 }
 
 func (s *UserService) ListUsers(ctx context.Context, filters *dto.UserFilters) ([]*dto.UserResponse, int64, error) {
@@ -174,7 +176,7 @@ func (s *UserService) ListUsers(ctx context.Context, filters *dto.UserFilters) (
 
 	var responses []*dto.UserResponse
 	for _, u := range users {
-		responses = append(responses, toUserResponse(u))
+		responses = append(responses, mapper.UserToResponse(u))
 	}
 
 	return responses, count, nil
@@ -193,7 +195,7 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*dto.U
 		return nil, errors.New("invalid credentials")
 	}
 
-	return toUserResponse(user), nil
+	return mapper.UserToResponse(user), nil
 }
 
 func (s *UserService) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*dto.UserResponse, int64, error) {
@@ -203,7 +205,7 @@ func (s *UserService) ListAvailableOperators(ctx context.Context, limit, offset 
 	}
 	var out []*dto.UserResponse
 	for _, u := range users {
-		out = append(out, toUserResponse(u))
+		out = append(out, mapper.UserToResponse(u))
 	}
 	return out, count, nil
 }
@@ -225,7 +227,7 @@ func (s *UserService) UpdateAvailability(ctx context.Context, userID string, ava
 	if err != nil {
 		return nil, err
 	}
-	return toUserResponse(updated), nil
+	return mapper.UserToResponse(updated), nil
 }
 
 func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
@@ -248,7 +250,7 @@ func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, sta
 	if err != nil {
 		return nil, err
 	}
-	return toUserResponse(updated), nil
+	return mapper.UserToResponse(updated), nil
 }
 
 func (s *UserService) UpdatePresence(ctx context.Context, userID string, isOnline bool) error {
@@ -267,6 +269,35 @@ func (s *UserService) UpdatePresence(ctx context.Context, userID string, isOnlin
 	return err
 }
 
+func (s *UserService) ValidateUserSession(ctx context.Context, userID, sessionExternalID, participantRole string) (allowed bool, err error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return false, nil
+	}
+	user, err := s.repo.Get(ctx, uid)
+	if err != nil || user == nil || !user.IsActive {
+		return false, nil
+	}
+	existing, err := s.sessionRepo.FindActiveByUserAndExternalID(ctx, userID, sessionExternalID)
+	if err != nil {
+		return false, err
+	}
+	if existing != nil {
+		return true, nil
+	}
+	activeCount, err := s.sessionRepo.CountActiveByUserID(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	if user.Role == "operator" && (user.OperatorStatus != "verified" || !user.IsAvailable) {
+		return false, nil
+	}
+	if int(activeCount) >= user.MaxSessions {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (s *UserService) GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error) {
 	list, count, err := s.sessionRepo.ListByUserID(ctx, userID, limit, offset)
 	if err != nil {
@@ -274,7 +305,7 @@ func (s *UserService) GetUserSessions(ctx context.Context, userID string, limit,
 	}
 	out := make([]*dto.UserSessionResponse, len(list))
 	for i := range list {
-		out[i] = toSessionResponse(list[i])
+		out[i] = mapper.SessionToResponse(list[i])
 	}
 	return out, count, nil
 }
@@ -286,7 +317,7 @@ func (s *UserService) GetActiveSessions(ctx context.Context, userID string) ([]*
 	}
 	out := make([]*dto.UserSessionResponse, len(list))
 	for i := range list {
-		out[i] = toSessionResponse(list[i])
+		out[i] = mapper.SessionToResponse(list[i])
 	}
 	return out, nil
 }
@@ -330,25 +361,7 @@ func (s *UserService) CreateSession(ctx context.Context, userID string, req *dto
 	user.TotalSessions++
 	user.IsOnline = true
 	_, _ = s.repo.Update(ctx, user)
-	return toSessionResponse(created), nil
-}
-
-func toSessionResponse(s *model.UserSession) *dto.UserSessionResponse {
-	if s == nil {
-		return nil
-	}
-	return &dto.UserSessionResponse{
-		ID:                   s.ID,
-		UserID:               s.UserID,
-		SessionType:          s.SessionType,
-		SessionExternalID:    s.SessionExternalID,
-		ParticipantRole:      s.ParticipantRole,
-		JoinedAt:             s.JoinedAt,
-		LeftAt:               s.LeftAt,
-		DurationSeconds:      s.DurationSeconds,
-		ConsultationRating:   s.ConsultationRating,
-		ConsultationFeedback: s.ConsultationFeedback,
-	}
+	return mapper.SessionToResponse(created), nil
 }
 
 func hashPassword(password string) (string, error) {
@@ -359,36 +372,4 @@ func hashPassword(password string) (string, error) {
 func checkPassword(hash, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
-}
-
-func toUserResponse(u *model.User) *dto.UserResponse {
-	if u == nil {
-		return nil
-	}
-	return &dto.UserResponse{
-		ID:             u.ID,
-		Username:       u.Username,
-		Email:          u.Email,
-		Phone:          u.Phone,
-		Status:         u.Status,
-		Role:           u.Role,
-		OperatorStatus: u.OperatorStatus,
-		MaxSessions:    u.MaxSessions,
-		IsAvailable:    u.IsAvailable,
-		FullName:       u.FullName,
-		AvatarURL:      u.AvatarURL,
-		Timezone:       u.Timezone,
-		Language:       u.Language,
-		Company:        u.Company,
-		Specialization: u.Specialization,
-		TotalSessions:  u.TotalSessions,
-		Rating:         u.Rating,
-		IsActive:       u.IsActive,
-		IsOnline:       u.IsOnline,
-		CreatedAt:      u.CreatedAt,
-		UpdatedAt:      u.UpdatedAt,
-		LastLogin:      u.LastLogin,
-		LastActivity:   u.LastActivity,
-		LastSeenAt:     u.LastSeenAt,
-	}
 }

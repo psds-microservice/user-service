@@ -6,6 +6,7 @@ import (
 	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/middleware"
 	"github.com/psds-microservice/user-service/internal/service"
+	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
 // APIv1 возвращает http.Handler для префикса /api/v1.
@@ -22,28 +23,36 @@ func APIv1(
 
 	mux := http.NewServeMux()
 
-	// Публичные
-	mux.HandleFunc("POST /auth/register", authHandler.Register)
-	mux.HandleFunc("POST /auth/login", authHandler.Login)
-	mux.HandleFunc("POST /auth/refresh", authHandler.Refresh)
-	mux.HandleFunc("POST /auth/logout", authHandler.Logout)
+	// Публичные (эквиваленты gRPC без JWT)
+	mux.HandleFunc("POST "+constants.PathAuthRegister, authHandler.Register)
+	mux.HandleFunc("POST "+constants.PathAuthLogin, authHandler.Login)
+	mux.HandleFunc("POST "+constants.PathAuthRefresh, authHandler.Refresh)
+	mux.HandleFunc("POST "+constants.PathAuthLogout, authHandler.Logout)
+	mux.HandleFunc("POST "+constants.PathUsers, userHandler.CreateUserJSON)
+	mux.HandleFunc("POST "+constants.PathSessionsValidate, sessionsHandler.ValidateSession)
 
 	// Требуют JWT
 	withAuth := middleware.JWTAuth(jwtConfig, blacklist)
-	mux.Handle("GET /users/me", withAuth(http.HandlerFunc(meHandler.GetMe)))
-	mux.Handle("PUT /users/me", withAuth(http.HandlerFunc(meHandler.UpdateMe)))
+	mux.Handle("GET "+constants.PathUsersMe, withAuth(http.HandlerFunc(meHandler.GetMe)))
+	mux.Handle("PUT "+constants.PathUsersMe, withAuth(http.HandlerFunc(meHandler.UpdateMe)))
 
-	// GET /users/{id} — ограниченный доступ (авторизованный видит больше)
-	mux.Handle("GET /users/{id}", withAuth(http.HandlerFunc(userHandler.GetUserByID)))
+	// Пользователи: GET/PUT/DELETE по id, presence
+	mux.Handle("GET "+constants.PathUsersID, withAuth(http.HandlerFunc(userHandler.GetUserByID)))
+	mux.Handle("PUT "+constants.PathUsersPresence, withAuth(http.HandlerFunc(userHandler.UpdatePresence)))
+	mux.Handle("PUT "+constants.PathUsersID, withAuth(http.HandlerFunc(userHandler.UpdateUserByID)))
+	mux.Handle("DELETE "+constants.PathUsersID, withAuth(http.HandlerFunc(userHandler.DeleteUserByID)))
 
-	mux.Handle("GET /operators/available", withAuth(http.HandlerFunc(operatorsHandler.Available)))
-	mux.Handle("PUT /operators/availability", withAuth(http.HandlerFunc(operatorsHandler.Availability)))
-	mux.Handle("POST /operators/{id}/verify", withAuth(middleware.RequireRole("admin")(http.HandlerFunc(operatorsHandler.Verify))))
-	mux.Handle("GET /operators/stats", withAuth(http.HandlerFunc(operatorsHandler.Stats)))
+	// Операторы
+	mux.Handle("GET "+constants.PathOperatorsAvailable, withAuth(http.HandlerFunc(operatorsHandler.Available)))
+	mux.Handle("PUT "+constants.PathOperatorsAvailability, withAuth(http.HandlerFunc(operatorsHandler.Availability)))
+	mux.Handle("PUT "+constants.PathOperatorsIDAvailability, withAuth(middleware.RequireRole(constants.RoleAdmin)(http.HandlerFunc(operatorsHandler.SetAvailabilityByID))))
+	mux.Handle("POST "+constants.PathOperatorsIDVerify, withAuth(middleware.RequireRole(constants.RoleAdmin)(http.HandlerFunc(operatorsHandler.Verify))))
+	mux.Handle("GET "+constants.PathOperatorsStats, withAuth(http.HandlerFunc(operatorsHandler.Stats)))
 
-	mux.Handle("GET /users/{id}/sessions", withAuth(http.HandlerFunc(sessionsHandler.ListSessions)))
-	mux.Handle("GET /users/{id}/active-sessions", withAuth(http.HandlerFunc(sessionsHandler.ListActiveSessions)))
-	mux.Handle("POST /users/{id}/sessions", withAuth(http.HandlerFunc(sessionsHandler.CreateSession)))
+	// Сессии пользователя
+	mux.Handle("GET "+constants.PathUsersSessions, withAuth(http.HandlerFunc(sessionsHandler.ListSessions)))
+	mux.Handle("GET "+constants.PathUsersActiveSessions, withAuth(http.HandlerFunc(sessionsHandler.ListActiveSessions)))
+	mux.Handle("POST "+constants.PathUsersSessions, withAuth(http.HandlerFunc(sessionsHandler.CreateSession)))
 
-	return http.StripPrefix("/api/v1", mux)
+	return http.StripPrefix(constants.BasePathAPI, mux)
 }
