@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/psds-microservice/user-service/internal/dto"
@@ -47,28 +46,39 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Assuming URL pattern /users/{id}
-	// This is a naive ID extraction, keeping it simple for standard ServeMux w/o pattern matching in Go < 1.22
-	// If using Go 1.22+, we could use r.PathValue("id")
-
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 2 {
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) < 1 {
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
 	}
 	idStr := pathParts[len(pathParts)-1]
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
+	if idStr == "" {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
-	resp, err := h.service.GetUser(r.Context(), uint(id))
+	resp, err := h.service.GetUser(r.Context(), idStr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+// GetUserByID для роута GET /api/v1/users/{id} (PathValue).
+func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "user id required", http.StatusBadRequest)
+		return
+	}
+	resp, err := h.service.GetUser(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }

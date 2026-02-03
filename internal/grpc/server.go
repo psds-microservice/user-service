@@ -23,11 +23,10 @@ func NewServer(svc service.IUserService) *Server {
 
 func (s *Server) CreateUser(ctx context.Context, req *user_service.CreateUserRequest) (*user_service.UserResponse, error) {
 	resp, err := s.svc.CreateUser(ctx, &dto.CreateUserRequest{
-		Email:     req.GetEmail(),
-		Name:      req.GetName(),
-		Password:  req.GetPassword(),
-		Notes:     req.GetNotes(),
-		CreatedBy: req.GetCreatedBy(),
+		Username: req.GetUsername(),
+		Email:    req.GetEmail(),
+		Phone:    req.GetPhone(),
+		Password: req.GetPassword(),
 	})
 	if err != nil {
 		return &user_service.UserResponse{Error: err.Error()}, nil
@@ -36,7 +35,7 @@ func (s *Server) CreateUser(ctx context.Context, req *user_service.CreateUserReq
 }
 
 func (s *Server) GetUser(ctx context.Context, req *user_service.GetUserRequest) (*user_service.UserResponse, error) {
-	resp, err := s.svc.GetUser(ctx, uint(req.GetId()))
+	resp, err := s.svc.GetUser(ctx, req.GetId())
 	if err != nil {
 		return &user_service.UserResponse{Error: err.Error()}, nil
 	}
@@ -45,12 +44,12 @@ func (s *Server) GetUser(ctx context.Context, req *user_service.GetUserRequest) 
 
 func (s *Server) UpdateUser(ctx context.Context, req *user_service.UpdateUserRequest) (*user_service.UserResponse, error) {
 	resp, err := s.svc.UpdateUser(ctx, &dto.UpdateUserRequest{
-		Id:        uint(req.GetId()),
-		Email:     req.GetEmail(),
-		Name:      req.GetName(),
-		Password:  req.GetPassword(),
-		Notes:     req.GetNotes(),
-		UpdatedBy: req.GetUpdatedBy(),
+		ID:       req.GetId(),
+		Username: req.GetUsername(),
+		Email:    req.GetEmail(),
+		Phone:    req.GetPhone(),
+		Password: req.GetPassword(),
+		Status:   req.GetStatus(),
 	})
 	if err != nil {
 		return &user_service.UserResponse{Error: err.Error()}, nil
@@ -59,7 +58,7 @@ func (s *Server) UpdateUser(ctx context.Context, req *user_service.UpdateUserReq
 }
 
 func (s *Server) DeleteUser(ctx context.Context, req *user_service.DeleteUserRequest) (*user_service.DeleteUserResponse, error) {
-	err := s.svc.DeleteUser(ctx, uint(req.GetId()))
+	err := s.svc.DeleteUser(ctx, req.GetId())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -79,10 +78,11 @@ func toProtoUserResponse(r *dto.UserResponse) *user_service.UserResponse {
 		return nil
 	}
 	out := &user_service.UserResponse{
-		Id:    int64(r.Id),
-		Email: r.Email,
-		Name:  r.Name,
-		Notes: r.Notes,
+		Id:       r.ID,
+		Username: r.Username,
+		Email:    r.Email,
+		Phone:    r.Phone,
+		Status:   r.Status,
 	}
 	if !r.CreatedAt.IsZero() {
 		out.CreatedAt = timestamppb.New(r.CreatedAt)

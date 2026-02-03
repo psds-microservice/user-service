@@ -7,13 +7,16 @@ import (
 )
 
 type Config struct {
-	AppHost  string // APP_HOST, bind address (e.g. 0.0.0.0)
-	HTTPPort string // APP_PORT or HTTP_PORT
-	GRPCPort string // GRPC_PORT or METRICS_PORT
-	AppEnv   string // APP_ENV
-	AppDebug bool   // APP_DEBUG
-	LogLevel string // LOG_LEVEL
-	DB       struct {
+	AppHost    string // APP_HOST
+	HTTPPort   string // APP_PORT or HTTP_PORT
+	GRPCPort   string // GRPC_PORT
+	AppEnv     string // APP_ENV
+	AppDebug   bool   // APP_DEBUG
+	LogLevel   string // LOG_LEVEL
+	JWTSecret  string // JWT_SECRET
+	JWTAccess  string // JWT_ACCESS_TTL e.g. 15m
+	JWTRefresh string // JWT_REFRESH_TTL e.g. 168h
+	DB         struct {
 		Host     string
 		Port     string
 		User     string
@@ -25,12 +28,15 @@ type Config struct {
 
 func Load() (*Config, error) {
 	c := &Config{
-		AppHost:  getEnv("APP_HOST", "0.0.0.0"),
-		HTTPPort: firstEnv("APP_PORT", "HTTP_PORT", "8080"),
-		GRPCPort: firstEnv("GRPC_PORT", "METRICS_PORT", "9090"),
-		AppEnv:   getEnv("APP_ENV", "development"),
-		AppDebug: getEnv("APP_DEBUG", "false") == "true",
-		LogLevel: getEnv("LOG_LEVEL", "info"),
+		AppHost:    getEnv("APP_HOST", "0.0.0.0"),
+		HTTPPort:   firstEnv("APP_PORT", "HTTP_PORT", "8080"),
+		GRPCPort:   firstEnv("GRPC_PORT", "METRICS_PORT", "9090"),
+		AppEnv:     getEnv("APP_ENV", "development"),
+		AppDebug:   getEnv("APP_DEBUG", "false") == "true",
+		LogLevel:   getEnv("LOG_LEVEL", "info"),
+		JWTSecret:  getEnv("JWT_SECRET", "change-me-in-production"),
+		JWTAccess:  getEnv("JWT_ACCESS_TTL", "15m"),
+		JWTRefresh: getEnv("JWT_REFRESH_TTL", "168h"),
 		DB: struct {
 			Host     string
 			Port     string

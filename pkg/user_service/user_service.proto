@@ -12,40 +12,46 @@ service UserService {
   rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
   rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
   rpc Login (LoginRequest) returns (UserResponse);
+  // Интеграция session-manager
+  rpc ValidateUserSession (ValidateUserSessionRequest) returns (ValidateUserSessionResponse);
+  rpc UpdateUserPresence (UpdateUserPresenceRequest) returns (UpdateUserPresenceResponse);
+  // Интеграция operator-pool
+  rpc GetAvailableOperators (GetAvailableOperatorsRequest) returns (GetAvailableOperatorsResponse);
+  rpc UpdateOperatorStatus (UpdateOperatorStatusRequest) returns (UpdateOperatorStatusResponse);
 }
 
 message User {
-  int64 id = 1;
-  string email = 2;
-  string name = 3;
-  string notes = 4;
-  google.protobuf.Timestamp created_at = 5;
-  google.protobuf.Timestamp updated_at = 6;
+  string id = 1;  // UUID
+  string username = 2;
+  string email = 3;
+  string phone = 4;
+  string status = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message CreateUserRequest {
-  string email = 1;
-  string name = 2;
-  string password = 3;
-  string notes = 4;
-  int64 created_by = 5;
+  string username = 1;
+  string email = 2;
+  string phone = 3;
+  string password = 4;
 }
 
 message GetUserRequest {
-  int64 id = 1;
+  string id = 1;  // UUID
 }
 
 message UpdateUserRequest {
-  int64 id = 1;
-  string email = 2;
-  string name = 3;
-  string password = 4; // Optional, empty if not changing
-  string notes = 5;
-  int64 updated_by = 6;
+  string id = 1;  // UUID
+  string username = 2;
+  string email = 3;
+  string phone = 4;
+  string password = 5;  // Optional, empty if not changing
+  string status = 6;
 }
 
 message DeleteUserRequest {
-  int64 id = 1;
+  string id = 1;  // UUID
 }
 
 message DeleteUserResponse {
@@ -58,11 +64,54 @@ message LoginRequest {
 }
 
 message UserResponse {
-  int64 id = 1;
-  string email = 2;
-  string name = 3;
-  string notes = 4;
-  google.protobuf.Timestamp created_at = 5;
-  google.protobuf.Timestamp updated_at = 6;
-  string error = 7; // Simple error handling
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string phone = 4;
+  string status = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  string error = 8;
+}
+
+message ValidateUserSessionRequest {
+  string user_id = 1;
+  string session_external_id = 2;
+  string participant_role = 3;
+}
+
+message ValidateUserSessionResponse {
+  bool allowed = 1;
+  string error = 2;
+}
+
+message UpdateUserPresenceRequest {
+  string user_id = 1;
+  bool is_online = 2;
+}
+
+message UpdateUserPresenceResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message GetAvailableOperatorsRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message GetAvailableOperatorsResponse {
+  repeated UserResponse operators = 1;
+  int64 total = 2;
+  string error = 3;
+}
+
+message UpdateOperatorStatusRequest {
+  string user_id = 1;
+  bool is_available = 2;
+}
+
+message UpdateOperatorStatusResponse {
+  bool success = 1;
+  string error = 2;
 }

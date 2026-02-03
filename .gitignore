@@ -10,10 +10,15 @@
 .idea/
 *.iml
 .vscode/
+promt.txt
+docs-promt
 
 # Go
 /vendor/
 /coverage.out
+
+# Proto: клонированный infra при make proto-build
+build/
 
 # Proto build artifacts (generated code is committed in pkg/gen/)
 fd.pb

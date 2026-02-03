@@ -57,21 +57,55 @@ help:
 	@echo "  make security-check - Проверка безопасности"
 	@echo ""
 
-## 📦 Proto файлы (образ и entrypoint из psds-microservice/infra)
+## 📦 Proto файлы (образ из https://github.com/psds-microservice/infra)
 proto: proto-build proto-generate
 
+# Сборка образа: из локального infra/ (submodule) или клонирование psds-microservice/infra.
+# Dockerfile в infra ожидает COPY infra/docker-entrypoint.sh — контекст должен содержать папку infra/ с этим файлом.
 proto-build:
 	@echo "📦 Building protoc-go image..."
-	docker build -t $(PROTOC_IMAGE) -f infra/protoc-go.Dockerfile .
+	@if [ -f infra/protoc-go.Dockerfile ]; then \
+		echo "Using local infra/ (submodule)..."; \
+		docker build -t $(PROTOC_IMAGE) -f infra/protoc-go.Dockerfile .; \
+	else \
+		echo "Cloning psds-microservice/infra..."; \
+		rm -rf build/infra-repo && mkdir -p build && git clone --depth 1 https://github.com/psds-microservice/infra.git build/infra-repo && \
+		mkdir -p build/infra-repo/infra && cp build/infra-repo/docker-entrypoint.sh build/infra-repo/infra/ && \
+		docker build -t $(PROTOC_IMAGE) -f build/infra-repo/protoc-go.Dockerfile build/infra-repo; \
+	fi
 	@echo "✅ Docker image built"
 
+# Генерация: сначала пробуем локальный protoc (PATH + go install плагины), иначе Docker с обходом entrypoint
 proto-generate:
-	@echo "🔧 Generating Go code from shared proto files..."
+	@PATH="$$(go env GOPATH 2>/dev/null)/bin:$$PATH"; \
+	if command -v protoc >/dev/null 2>&1 && command -v protoc-gen-go >/dev/null 2>&1 && command -v protoc-gen-go-grpc >/dev/null 2>&1; then \
+		$(MAKE) proto-generate-local; \
+	else \
+		$(MAKE) proto-generate-docker; \
+	fi
+
+# Локальная генерация: protoc + protoc-gen-go, protoc-gen-go-grpc из PATH или go install
+proto-generate-local:
+	@echo "🔧 Generating Go code (local protoc)..."
+	@mkdir -p $(GEN_DIR)
+	@PATH="$$(go env GOPATH)/bin:$$PATH"; \
+	for f in $(PROTO_ROOT)/*.proto; do \
+		[ -f "$$f" ] || continue; \
+		echo "📁 Processing: $$f"; \
+		protoc -I $(PROTO_ROOT) --go_out=. --go_opt=module=$(GO_MODULE) --go-grpc_out=. --go-grpc_opt=module=$(GO_MODULE) "$$f" || exit 1; \
+	done
+	@echo "✅ Generated in $(GEN_DIR)"
+
+# Docker: обходим entrypoint образа infra (exec entrypoint.sh: no such file or directory)
+proto-generate-docker:
+	@echo "🔧 Generating Go code (Docker)..."
 	@mkdir -p $(GEN_DIR)
 	@docker run --rm \
 		-v "$(CURDIR):/workspace" \
+		-w /workspace \
+		--entrypoint sh \
 		$(PROTOC_IMAGE) \
-		sh -c ' \
+		-c ' \
 		PROTO_ROOT="$(PROTO_ROOT)" MODULE="$(GO_MODULE)" && \
 		find $$PROTO_ROOT -name "*.proto" 2>/dev/null | while read f; do \
 		echo "📁 Processing: $$f" && \
@@ -90,8 +124,10 @@ proto-pkg:
 	@echo "Using Docker image: $(PROTOC_IMAGE)"
 	@docker run --rm \
 		-v "$(CURDIR):/workspace" \
+		-w /workspace \
+		--entrypoint sh \
 		$(PROTOC_IMAGE) \
-		sh -c ' \
+		-c ' \
 		echo "Finding proto files..." && \
 		find pkg/user_service -name "*.proto" | while read f; do \
 		echo "Processing $$f" && \
@@ -109,16 +145,20 @@ proto-pkg-simple:
 	@mkdir -p pkg/gen
 	@docker run --rm \
 		-v "$(CURDIR):/workspace" \
+		-w /workspace \
+		--entrypoint sh \
 		$(PROTOC_IMAGE) \
-		sh -c 'find pkg/user_service -name "*.proto" -exec echo "Processing {}" \; -exec protoc -I pkg/user_service -I /include --go_out=. --go_opt=module=github.com/psds-microservice/user-service --go-grpc_out=. --go-grpc_opt=module=github.com/psds-microservice/user-service {} \;'
+		-c 'find pkg/user_service -name "*.proto" -exec echo "Processing {}" \; -exec protoc -I pkg/user_service -I /include --go_out=. --go_opt=module=github.com/psds-microservice/user-service --go-grpc_out=. --go-grpc_opt=module=github.com/psds-microservice/user-service {} \;'
 	@echo "✅ Shared library generated in pkg/gen/"
 
 proto-pkg-script:
 	@echo "🚀 Generating via script..."
 	@docker run --rm \
 		-v "$(CURDIR):/workspace" \
+		-w /workspace \
+		--entrypoint sh \
 		$(PROTOC_IMAGE) \
-		sh -c ' \
+		-c ' \
 		PROTO_ROOT="pkg/user_service" && \
 		mkdir -p $(GEN_DIR) && \
 		find $$PROTO_ROOT -name "*.proto" | while read proto_file; do \

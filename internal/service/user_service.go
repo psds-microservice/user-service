@@ -3,8 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
+
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/google/uuid"
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/model"
 	"github.com/psds-microservice/user-service/internal/repository"
@@ -13,21 +16,35 @@ import (
 type IUserService interface {
 	CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error)
 	UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error)
-	DeleteUser(ctx context.Context, id uint) error
-	GetUser(ctx context.Context, id uint) (*dto.UserResponse, error)
+	DeleteUser(ctx context.Context, id string) error
+	GetUser(ctx context.Context, id string) (*dto.UserResponse, error)
 	ListUsers(ctx context.Context, filters *dto.UserFilters) ([]*dto.UserResponse, int64, error)
 	Login(ctx context.Context, email, password string) (*dto.UserResponse, error)
+	ListAvailableOperators(ctx context.Context, limit, offset int) ([]*dto.UserResponse, int64, error)
+	UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error)
+	VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error)
+	UpdatePresence(ctx context.Context, userID string, isOnline bool) error
+	GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error)
+	GetActiveSessions(ctx context.Context, userID string) ([]*dto.UserSessionResponse, error)
+	CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error)
 }
 
 type UserService struct {
-	repo repository.IUserRepository
+	repo        repository.IUserRepository
+	sessionRepo repository.IUserSessionRepository
 }
 
-func NewUserService(repo repository.IUserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo repository.IUserRepository, sessionRepo repository.IUserSessionRepository) *UserService {
+	return &UserService{repo: repo, sessionRepo: sessionRepo}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
+	if req.Username != "" {
+		existing, _ := s.repo.FindByUsername(ctx, req.Username)
+		if existing != nil {
+			return nil, errors.New("user with this username already exists")
+		}
+	}
 	existing, err := s.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
@@ -41,12 +58,36 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		return nil, err
 	}
 
+	username := req.Username
+	if username == "" {
+		username = req.Email // fallback to email if no username
+	}
+
+	role := req.Role
+	if role == "" {
+		role = "client"
+	}
+	if role != "client" && role != "operator" && role != "admin" {
+		role = "client"
+	}
+	operatorStatus := ""
+	if role == "operator" {
+		operatorStatus = "pending"
+	}
+
 	user := &model.User{
-		Email:     req.Email,
-		Name:      req.Name,
-		Password:  hashedPassword,
-		Notes:     req.Notes,
-		CreatedBy: req.CreatedBy,
+		ID:             uuid.New().String(),
+		Username:       username,
+		Email:          req.Email,
+		Phone:          req.Phone,
+		PasswordHash:   hashedPassword,
+		Status:         "active",
+		Role:           role,
+		OperatorStatus: operatorStatus,
+		MaxSessions:    1,
+		IsAvailable:    false,
+		IsActive:       true,
+		Language:       "en",
 	}
 
 	createdUser, err := s.repo.Create(ctx, user)
@@ -58,7 +99,11 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	user, err := s.repo.Get(ctx, req.Id)
+	id, err := uuid.Parse(req.ID)
+	if err != nil {
+		return nil, errors.New("invalid user id")
+	}
+	user, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -66,18 +111,29 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		return nil, errors.New("user not found")
 	}
 
-	user.Email = req.Email
-	user.Name = req.Name
-	user.Notes = req.Notes
-	user.UpdatedBy = req.UpdatedBy
-
+	if req.Username != "" {
+		user.Username = req.Username
+	}
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+	user.Phone = req.Phone
+	if req.Status != "" {
+		user.Status = req.Status
+	}
 	if req.Password != "" {
 		hashed, err := hashPassword(req.Password)
 		if err != nil {
 			return nil, err
 		}
-		user.Password = hashed
+		user.PasswordHash = hashed
 	}
+	user.FullName = req.FullName
+	user.AvatarURL = req.AvatarURL
+	user.Timezone = req.Timezone
+	user.Language = req.Language
+	user.Company = req.Company
+	user.Specialization = req.Specialization
 
 	updatedUser, err := s.repo.Update(ctx, user)
 	if err != nil {
@@ -87,12 +143,20 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	return toUserResponse(updatedUser), nil
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, id uint) error {
-	return s.repo.Delete(ctx, id)
+func (s *UserService) DeleteUser(ctx context.Context, id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return errors.New("invalid user id")
+	}
+	return s.repo.Delete(ctx, uid)
 }
 
-func (s *UserService) GetUser(ctx context.Context, id uint) (*dto.UserResponse, error) {
-	user, err := s.repo.Get(ctx, id)
+func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse, error) {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, errors.New("invalid user id")
+	}
+	user, err := s.repo.Get(ctx, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -125,14 +189,167 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*dto.U
 		return nil, errors.New("invalid credentials")
 	}
 
-	if !checkPassword(user.Password, password) {
+	if !checkPassword(user.PasswordHash, password) {
 		return nil, errors.New("invalid credentials")
 	}
 
 	return toUserResponse(user), nil
 }
 
-// Helpers
+func (s *UserService) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*dto.UserResponse, int64, error) {
+	users, count, err := s.repo.ListAvailableOperators(ctx, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	var out []*dto.UserResponse
+	for _, u := range users {
+		out = append(out, toUserResponse(u))
+	}
+	return out, count, nil
+}
+
+func (s *UserService) UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New("invalid user id")
+	}
+	user, err := s.repo.Get(ctx, uid)
+	if err != nil || user == nil {
+		return nil, errors.New("user not found")
+	}
+	if user.Role != "operator" {
+		return nil, errors.New("user is not an operator")
+	}
+	user.IsAvailable = available
+	updated, err := s.repo.Update(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return toUserResponse(updated), nil
+}
+
+func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
+	if status != "pending" && status != "verified" && status != "blocked" {
+		return nil, errors.New("invalid operator status")
+	}
+	uid, err := uuid.Parse(operatorID)
+	if err != nil {
+		return nil, errors.New("invalid operator id")
+	}
+	user, err := s.repo.Get(ctx, uid)
+	if err != nil || user == nil {
+		return nil, errors.New("user not found")
+	}
+	if user.Role != "operator" {
+		return nil, errors.New("user is not an operator")
+	}
+	user.OperatorStatus = status
+	updated, err := s.repo.Update(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return toUserResponse(updated), nil
+}
+
+func (s *UserService) UpdatePresence(ctx context.Context, userID string, isOnline bool) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return errors.New("invalid user id")
+	}
+	user, err := s.repo.Get(ctx, uid)
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+	now := time.Now()
+	user.IsOnline = isOnline
+	user.LastSeenAt = &now
+	_, err = s.repo.Update(ctx, user)
+	return err
+}
+
+func (s *UserService) GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error) {
+	list, count, err := s.sessionRepo.ListByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := make([]*dto.UserSessionResponse, len(list))
+	for i := range list {
+		out[i] = toSessionResponse(list[i])
+	}
+	return out, count, nil
+}
+
+func (s *UserService) GetActiveSessions(ctx context.Context, userID string) ([]*dto.UserSessionResponse, error) {
+	list, err := s.sessionRepo.ListActiveByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*dto.UserSessionResponse, len(list))
+	for i := range list {
+		out[i] = toSessionResponse(list[i])
+	}
+	return out, nil
+}
+
+func (s *UserService) CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error) {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New("invalid user id")
+	}
+	user, err := s.repo.Get(ctx, uid)
+	if err != nil || user == nil {
+		return nil, errors.New("user not found")
+	}
+	activeCount, err := s.sessionRepo.CountActiveByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user.Role == "client" && req.SessionType == "streaming" && activeCount >= 1 {
+		return nil, errors.New("client may have only one active streaming session")
+	}
+	if user.Role == "operator" && (user.OperatorStatus != "verified" || !user.IsAvailable) {
+		return nil, errors.New("operator must be verified and available")
+	}
+	if int(activeCount) >= user.MaxSessions {
+		user.IsAvailable = false
+		_, _ = s.repo.Update(ctx, user)
+		return nil, errors.New("max_sessions reached")
+	}
+	session := &model.UserSession{
+		ID:                uuid.New().String(),
+		UserID:            userID,
+		SessionType:       req.SessionType,
+		SessionExternalID: req.SessionExternalID,
+		ParticipantRole:   req.ParticipantRole,
+		JoinedAt:          time.Now(),
+	}
+	created, err := s.sessionRepo.Create(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+	user.TotalSessions++
+	user.IsOnline = true
+	_, _ = s.repo.Update(ctx, user)
+	return toSessionResponse(created), nil
+}
+
+func toSessionResponse(s *model.UserSession) *dto.UserSessionResponse {
+	if s == nil {
+		return nil
+	}
+	return &dto.UserSessionResponse{
+		ID:                   s.ID,
+		UserID:               s.UserID,
+		SessionType:          s.SessionType,
+		SessionExternalID:    s.SessionExternalID,
+		ParticipantRole:      s.ParticipantRole,
+		JoinedAt:             s.JoinedAt,
+		LeftAt:               s.LeftAt,
+		DurationSeconds:      s.DurationSeconds,
+		ConsultationRating:   s.ConsultationRating,
+		ConsultationFeedback: s.ConsultationFeedback,
+	}
+}
 
 func hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -145,12 +362,33 @@ func checkPassword(hash, password string) bool {
 }
 
 func toUserResponse(u *model.User) *dto.UserResponse {
+	if u == nil {
+		return nil
+	}
 	return &dto.UserResponse{
-		Id:        u.ID,
-		Email:     u.Email,
-		Name:      u.Name,
-		Notes:     u.Notes,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		ID:             u.ID,
+		Username:       u.Username,
+		Email:          u.Email,
+		Phone:          u.Phone,
+		Status:         u.Status,
+		Role:           u.Role,
+		OperatorStatus: u.OperatorStatus,
+		MaxSessions:    u.MaxSessions,
+		IsAvailable:    u.IsAvailable,
+		FullName:       u.FullName,
+		AvatarURL:      u.AvatarURL,
+		Timezone:       u.Timezone,
+		Language:       u.Language,
+		Company:        u.Company,
+		Specialization: u.Specialization,
+		TotalSessions:  u.TotalSessions,
+		Rating:         u.Rating,
+		IsActive:       u.IsActive,
+		IsOnline:       u.IsOnline,
+		CreatedAt:      u.CreatedAt,
+		UpdatedAt:      u.UpdatedAt,
+		LastLogin:      u.LastLogin,
+		LastActivity:   u.LastActivity,
+		LastSeenAt:     u.LastSeenAt,
 	}
 }

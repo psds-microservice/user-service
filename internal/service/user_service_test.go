@@ -3,51 +3,47 @@ package service
 import (
 	"context"
 	"testing"
-	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/model"
-	"gorm.io/gorm"
 )
 
-// StubUserRepository is a simple in-memory repository for testing
+// StubUserRepository — in-memory репозиторий для тестов (UUID).
 type StubUserRepository struct {
-	users  map[uint]*model.User
-	nextID uint
+	users map[string]*model.User
 }
 
 func NewStubUserRepository() *StubUserRepository {
 	return &StubUserRepository{
-		users:  make(map[uint]*model.User),
-		nextID: 1,
+		users: make(map[string]*model.User),
 	}
 }
 
 func (r *StubUserRepository) Create(ctx context.Context, user *model.User) (*model.User, error) {
-	user.ID = r.nextID
-	r.nextID++
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
+	if user.ID == "" {
+		user.ID = uuid.New().String()
+	}
 	r.users[user.ID] = user
 	return user, nil
 }
 
 func (r *StubUserRepository) Update(ctx context.Context, user *model.User) (*model.User, error) {
 	if _, exists := r.users[user.ID]; !exists {
-		return nil, gorm.ErrRecordNotFound
+		return nil, nil
 	}
-	user.UpdatedAt = time.Now()
 	r.users[user.ID] = user
 	return user, nil
 }
 
-func (r *StubUserRepository) Delete(ctx context.Context, id uint) error {
-	delete(r.users, id)
+func (r *StubUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	delete(r.users, id.String())
 	return nil
 }
 
-func (r *StubUserRepository) Get(ctx context.Context, id uint) (*model.User, error) {
-	if user, exists := r.users[id]; exists {
+func (r *StubUserRepository) Get(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	if user, exists := r.users[id.String()]; exists {
 		return user, nil
 	}
 	return nil, nil
@@ -67,20 +63,59 @@ func (r *StubUserRepository) FindByEmail(ctx context.Context, email string) (*mo
 			return u, nil
 		}
 	}
-	return nil, nil // Not found
+	return nil, nil
+}
+
+func (r *StubUserRepository) FindByUsername(ctx context.Context, username string) (*model.User, error) {
+	for _, u := range r.users {
+		if u.Username == username {
+			return u, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *StubUserRepository) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*model.User, int64, error) {
+	var list []*model.User
+	for _, u := range r.users {
+		if u.Role == "operator" && u.OperatorStatus == "verified" && u.IsAvailable {
+			list = append(list, u)
+		}
+	}
+	return list, int64(len(list)), nil
+}
+
+// StubSessionRepository для тестов.
+type StubSessionRepository struct{}
+
+func (StubSessionRepository) Create(ctx context.Context, s *model.UserSession) (*model.UserSession, error) {
+	return s, nil
+}
+func (StubSessionRepository) Update(ctx context.Context, s *model.UserSession) (*model.UserSession, error) {
+	return s, nil
+}
+func (StubSessionRepository) Get(ctx context.Context, id uuid.UUID) (*model.UserSession, error) {
+	return nil, nil
+}
+func (StubSessionRepository) ListByUserID(ctx context.Context, userID string, limit, offset int) ([]*model.UserSession, int64, error) {
+	return nil, 0, nil
+}
+func (StubSessionRepository) CountActiveByUserID(ctx context.Context, userID string) (int64, error) {
+	return 0, nil
+}
+func (StubSessionRepository) ListActiveByUserID(ctx context.Context, userID string) ([]*model.UserSession, error) {
+	return nil, nil
 }
 
 func TestUserService_CreateAndLogin(t *testing.T) {
 	repo := NewStubUserRepository()
-	s := NewUserService(repo)
+	s := NewUserService(repo, StubSessionRepository{})
 	ctx := context.Background()
 
-	// 1. Create User
 	req := &dto.CreateUserRequest{
+		Username: "testuser",
 		Email:    "test@example.com",
-		Name:     "Test User",
 		Password: "secretpassword",
-		Notes:    "Some notes",
 	}
 
 	created, err := s.CreateUser(ctx, req)
@@ -88,23 +123,24 @@ func TestUserService_CreateAndLogin(t *testing.T) {
 		t.Fatalf("CreateUser failed: %v", err)
 	}
 
-	if created.Id == 0 {
+	if created.ID == "" {
 		t.Error("Expected ID to be set")
 	}
 	if created.Email != req.Email {
 		t.Errorf("Expected email %s, got %s", req.Email, created.Email)
 	}
+	if created.Username != req.Username {
+		t.Errorf("Expected username %s, got %s", req.Username, created.Username)
+	}
 
-	// 2. Login
 	loggedIn, err := s.Login(ctx, "test@example.com", "secretpassword")
 	if err != nil {
 		t.Fatalf("Login failed: %v", err)
 	}
-	if loggedIn.Id != created.Id {
-		t.Errorf("Expected logged in user ID %d, got %d", created.Id, loggedIn.Id)
+	if loggedIn.ID != created.ID {
+		t.Errorf("Expected logged in user ID %s, got %s", created.ID, loggedIn.ID)
 	}
 
-	// 3. Login with wrong password
 	_, err = s.Login(ctx, "test@example.com", "wrongpassword")
 	if err == nil {
 		t.Error("Expected error for wrong password, got nil")

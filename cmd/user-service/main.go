@@ -11,11 +11,11 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/config"
 	"github.com/psds-microservice/user-service/internal/database"
 	grpcserver "github.com/psds-microservice/user-service/internal/grpc"
 	"github.com/psds-microservice/user-service/internal/handler"
-	"github.com/psds-microservice/user-service/internal/model"
 	"github.com/psds-microservice/user-service/internal/repository"
 	"github.com/psds-microservice/user-service/internal/service"
 	"github.com/psds-microservice/user-service/pkg/gen/user_service"
@@ -67,16 +67,26 @@ func main() {
 
 	// Init Layers
 	userRepo := repository.NewUserRepository(db)
-	userSvc := service.NewUserService(userRepo)
+	sessionRepo := repository.NewUserSessionRepository(db)
+	userSvc := service.NewUserService(userRepo, sessionRepo)
 	userHandler := handler.NewUserHandler(userSvc)
+
+	jwtCfg, err := auth.NewConfig(cfg.JWTSecret, cfg.JWTAccess, cfg.JWTRefresh)
+	if err != nil {
+		log.Printf("jwt config: %v, using defaults", err)
+	}
+	blacklist := auth.NewBlacklist()
 
 	// HTTP server (health + REST API)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", handler.Health)
 	mux.HandleFunc("/ready", handler.Ready)
+	// Legacy routes (backward compat)
 	mux.HandleFunc("/users/create", userHandler.CreateUser)
 	mux.HandleFunc("/users/", userHandler.GetUser)
 	mux.HandleFunc("/login", userHandler.Login)
+	// API v1 (promt.txt): auth, users/me, operators, sessions
+	mux.Handle("/api/v1/", handler.APIv1(userSvc, jwtCfg, blacklist, userHandler))
 
 	httpAddr := cfg.AppHost + ":" + cfg.HTTPPort
 	httpSrv := &http.Server{Addr: httpAddr, Handler: mux}
