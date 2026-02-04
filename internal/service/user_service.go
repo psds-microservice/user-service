@@ -8,10 +8,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/mapper"
 	"github.com/psds-microservice/user-service/internal/model"
-	"github.com/psds-microservice/user-service/internal/repository"
 	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
@@ -46,27 +47,31 @@ type IUserService interface {
 }
 
 type UserService struct {
-	repo        repository.IUserRepository
-	sessionRepo repository.IUserSessionRepository
+	db *gorm.DB
 }
 
-func NewUserService(repo repository.IUserRepository, sessionRepo repository.IUserSessionRepository) *UserService {
-	return &UserService{repo: repo, sessionRepo: sessionRepo}
+func NewUserService(db *gorm.DB) *UserService {
+	return &UserService{db: db}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
 	if req.Username != "" {
-		existing, _ := s.repo.FindByUsername(ctx, req.Username)
-		if existing != nil {
+		var existing model.User
+		err := s.db.WithContext(ctx).Where("username = ?", req.Username).First(&existing).Error
+		if err == nil {
 			return nil, ErrUserAlreadyExists
 		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
 	}
-	existing, err := s.repo.FindByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, err
-	}
-	if existing != nil {
+	var existing model.User
+	err := s.db.WithContext(ctx).Where("email = ?", req.Email).First(&existing).Error
+	if err == nil {
 		return nil, ErrUserAlreadyExists
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
 	}
 
 	hashedPassword, err := hashPassword(req.Password)
@@ -76,7 +81,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 
 	username := req.Username
 	if username == "" {
-		username = req.Email // fallback to email if no username
+		username = req.Email
 	}
 
 	role := req.Role
@@ -106,12 +111,10 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		Language:       "en",
 	}
 
-	createdUser, err := s.repo.Create(ctx, user)
-	if err != nil {
+	if err := s.db.WithContext(ctx).Create(user).Error; err != nil {
 		return nil, err
 	}
-
-	return mapper.UserToResponse(createdUser), nil
+	return mapper.UserToResponse(user), nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
@@ -119,12 +122,13 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	if err != nil {
 		return nil, ErrInvalidUserID
 	}
-	user, err := s.repo.Get(ctx, id)
+	var user model.User
+	err = s.db.WithContext(ctx).Where("id = ?", id.String()).First(&user).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
-	}
-	if user == nil {
-		return nil, ErrUserNotFound
 	}
 
 	if req.Username != "" {
@@ -151,12 +155,10 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	user.Company = req.Company
 	user.Specialization = req.Specialization
 
-	updatedUser, err := s.repo.Update(ctx, user)
-	if err != nil {
+	if err := s.db.WithContext(ctx).Save(&user).Error; err != nil {
 		return nil, err
 	}
-
-	return mapper.UserToResponse(updatedUser), nil
+	return mapper.UserToResponse(&user), nil
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id string) error {
@@ -164,7 +166,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 	if err != nil {
 		return ErrInvalidUserID
 	}
-	return s.repo.Delete(ctx, uid)
+	return s.db.WithContext(ctx).Delete(&model.User{}, "id = ?", uid.String()).Error
 }
 
 func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse, error) {
@@ -172,19 +174,47 @@ func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse
 	if err != nil {
 		return nil, ErrInvalidUserID
 	}
-	user, err := s.repo.Get(ctx, uid)
+	var user model.User
+	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
 	}
-	if user == nil {
-		return nil, ErrUserNotFound
-	}
-	return mapper.UserToResponse(user), nil
+	return mapper.UserToResponse(&user), nil
 }
 
 func (s *UserService) ListUsers(ctx context.Context, filters *dto.UserFilters) ([]*dto.UserResponse, int64, error) {
-	users, count, err := s.repo.List(ctx, filters)
-	if err != nil {
+	var users []*model.User
+	var count int64
+	query := s.db.WithContext(ctx).Model(&model.User{})
+
+	if filters != nil {
+		if filters.Status != "" {
+			query = query.Where("status = ?", filters.Status)
+		}
+		if filters.Role != "" {
+			query = query.Where("role = ?", filters.Role)
+		}
+		if filters.Search != "" {
+			search := "%" + filters.Search + "%"
+			query = query.Where("username ILIKE ? OR email ILIKE ?", search, search)
+		}
+	}
+
+	if err := query.Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+	if filters != nil {
+		if filters.Limit > 0 {
+			query = query.Limit(filters.Limit)
+		}
+		if filters.Offset > 0 {
+			query = query.Offset(filters.Offset)
+		}
+	}
+	if err := query.Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -192,29 +222,41 @@ func (s *UserService) ListUsers(ctx context.Context, filters *dto.UserFilters) (
 	for _, u := range users {
 		responses = append(responses, mapper.UserToResponse(u))
 	}
-
 	return responses, count, nil
 }
 
 func (s *UserService) Login(ctx context.Context, email, password string) (*dto.UserResponse, error) {
-	user, err := s.repo.FindByEmail(ctx, email)
+	var user model.User
+	err := s.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrInvalidCredentials
+		}
 		return nil, err
 	}
-	if user == nil {
-		return nil, ErrInvalidCredentials
-	}
-
 	if !checkPassword(user.PasswordHash, password) {
 		return nil, ErrInvalidCredentials
 	}
-
-	return mapper.UserToResponse(user), nil
+	return mapper.UserToResponse(&user), nil
 }
 
 func (s *UserService) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*dto.UserResponse, int64, error) {
-	users, count, err := s.repo.ListAvailableOperators(ctx, limit, offset)
-	if err != nil {
+	var users []*model.User
+	var count int64
+	query := s.db.WithContext(ctx).Model(&model.User{}).
+		Where("role = ? AND operator_status = ? AND is_available = ? AND is_active = ?",
+			constants.RoleOperator, constants.OperatorStatusVerified, true, true)
+	if err := query.Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+	query = query.Order("rating DESC NULLS LAST")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+	if err := query.Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 	var out []*dto.UserResponse
@@ -229,19 +271,19 @@ func (s *UserService) UpdateAvailability(ctx context.Context, userID string, ava
 	if err != nil {
 		return nil, ErrInvalidUserID
 	}
-	user, err := s.repo.Get(ctx, uid)
-	if err != nil || user == nil {
-		return nil, ErrUserNotFound
-	}
-	if user.Role != constants.RoleOperator {
-		return nil, ErrNotOperator
-	}
-	user.IsAvailable = available
-	updated, err := s.repo.Update(ctx, user)
+	var user model.User
+	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
 	}
-	return mapper.UserToResponse(updated), nil
+	user.IsAvailable = available
+	if err := s.db.WithContext(ctx).Save(&user).Error; err != nil {
+		return nil, err
+	}
+	return mapper.UserToResponse(&user), nil
 }
 
 func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
@@ -252,19 +294,22 @@ func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, sta
 	if err != nil {
 		return nil, ErrInvalidUserID
 	}
-	user, err := s.repo.Get(ctx, uid)
-	if err != nil || user == nil {
-		return nil, ErrUserNotFound
+	var user model.User
+	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
 	}
 	if user.Role != constants.RoleOperator {
 		return nil, ErrNotOperator
 	}
 	user.OperatorStatus = status
-	updated, err := s.repo.Update(ctx, user)
-	if err != nil {
+	if err := s.db.WithContext(ctx).Save(&user).Error; err != nil {
 		return nil, err
 	}
-	return mapper.UserToResponse(updated), nil
+	return mapper.UserToResponse(&user), nil
 }
 
 func (s *UserService) UpdatePresence(ctx context.Context, userID string, isOnline bool) error {
@@ -272,15 +317,18 @@ func (s *UserService) UpdatePresence(ctx context.Context, userID string, isOnlin
 	if err != nil {
 		return ErrInvalidUserID
 	}
-	user, err := s.repo.Get(ctx, uid)
-	if err != nil || user == nil {
-		return ErrUserNotFound
+	var user model.User
+	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+		return err
 	}
 	now := time.Now()
 	user.IsOnline = isOnline
 	user.LastSeenAt = &now
-	_, err = s.repo.Update(ctx, user)
-	return err
+	return s.db.WithContext(ctx).Save(&user).Error
 }
 
 func (s *UserService) ValidateUserSession(ctx context.Context, userID, sessionExternalID, participantRole string) (allowed bool, err error) {
@@ -288,18 +336,21 @@ func (s *UserService) ValidateUserSession(ctx context.Context, userID, sessionEx
 	if err != nil {
 		return false, nil
 	}
-	user, err := s.repo.Get(ctx, uid)
-	if err != nil || user == nil || !user.IsActive {
+	var user model.User
+	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
+	if err != nil || !user.IsActive {
 		return false, nil
 	}
-	existing, err := s.sessionRepo.FindActiveByUserAndExternalID(ctx, userID, sessionExternalID)
-	if err != nil {
-		return false, err
-	}
-	if existing != nil {
+	var existing model.UserSession
+	err = s.db.WithContext(ctx).Where("user_id = ? AND session_external_id = ? AND left_at IS NULL", userID, sessionExternalID).First(&existing).Error
+	if err == nil {
 		return true, nil
 	}
-	activeCount, err := s.sessionRepo.CountActiveByUserID(ctx, userID)
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, err
+	}
+	var activeCount int64
+	err = s.db.WithContext(ctx).Model(&model.UserSession{}).Where("user_id = ? AND left_at IS NULL", userID).Count(&activeCount).Error
 	if err != nil {
 		return false, err
 	}
@@ -313,8 +364,20 @@ func (s *UserService) ValidateUserSession(ctx context.Context, userID, sessionEx
 }
 
 func (s *UserService) GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error) {
-	list, count, err := s.sessionRepo.ListByUserID(ctx, userID, limit, offset)
-	if err != nil {
+	var list []*model.UserSession
+	var count int64
+	q := s.db.WithContext(ctx).Model(&model.UserSession{}).Where("user_id = ?", userID)
+	if err := q.Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+	q = q.Order("joined_at DESC")
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	if offset > 0 {
+		q = q.Offset(offset)
+	}
+	if err := q.Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	out := make([]*dto.UserSessionResponse, len(list))
@@ -325,7 +388,8 @@ func (s *UserService) GetUserSessions(ctx context.Context, userID string, limit,
 }
 
 func (s *UserService) GetActiveSessions(ctx context.Context, userID string) ([]*dto.UserSessionResponse, error) {
-	list, err := s.sessionRepo.ListActiveByUserID(ctx, userID)
+	var list []*model.UserSession
+	err := s.db.WithContext(ctx).Where("user_id = ? AND left_at IS NULL", userID).Order("joined_at DESC").Find(&list).Error
 	if err != nil {
 		return nil, err
 	}
@@ -341,11 +405,16 @@ func (s *UserService) CreateSession(ctx context.Context, userID string, req *dto
 	if err != nil {
 		return nil, ErrInvalidUserID
 	}
-	user, err := s.repo.Get(ctx, uid)
-	if err != nil || user == nil {
-		return nil, ErrUserNotFound
+	var user model.User
+	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
 	}
-	activeCount, err := s.sessionRepo.CountActiveByUserID(ctx, userID)
+	var activeCount int64
+	err = s.db.WithContext(ctx).Model(&model.UserSession{}).Where("user_id = ? AND left_at IS NULL", userID).Count(&activeCount).Error
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +426,7 @@ func (s *UserService) CreateSession(ctx context.Context, userID string, req *dto
 	}
 	if int(activeCount) >= user.MaxSessions {
 		user.IsAvailable = false
-		_, _ = s.repo.Update(ctx, user)
+		_ = s.db.WithContext(ctx).Save(&user).Error
 		return nil, ErrMaxSessionsReached
 	}
 	session := &model.UserSession{
@@ -368,14 +437,13 @@ func (s *UserService) CreateSession(ctx context.Context, userID string, req *dto
 		ParticipantRole:   req.ParticipantRole,
 		JoinedAt:          time.Now(),
 	}
-	created, err := s.sessionRepo.Create(ctx, session)
-	if err != nil {
+	if err := s.db.WithContext(ctx).Create(session).Error; err != nil {
 		return nil, err
 	}
 	user.TotalSessions++
 	user.IsOnline = true
-	_, _ = s.repo.Update(ctx, user)
-	return mapper.SessionToResponse(created), nil
+	_ = s.db.WithContext(ctx).Save(&user).Error
+	return mapper.SessionToResponse(session), nil
 }
 
 func hashPassword(password string) (string, error) {

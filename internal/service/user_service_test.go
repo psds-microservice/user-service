@@ -4,113 +4,29 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/model"
-	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
-// StubUserRepository — in-memory репозиторий для тестов (UUID).
-type StubUserRepository struct {
-	users map[string]*model.User
-}
-
-func NewStubUserRepository() *StubUserRepository {
-	return &StubUserRepository{
-		users: make(map[string]*model.User),
+// testDB создаёт in-memory SQLite БД с миграциями для тестов.
+func testDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
 	}
-}
-
-func (r *StubUserRepository) Create(ctx context.Context, user *model.User) (*model.User, error) {
-	if user.ID == "" {
-		user.ID = uuid.New().String()
+	if err := db.AutoMigrate(&model.User{}, &model.UserSession{}); err != nil {
+		t.Fatalf("migrate: %v", err)
 	}
-	r.users[user.ID] = user
-	return user, nil
-}
-
-func (r *StubUserRepository) Update(ctx context.Context, user *model.User) (*model.User, error) {
-	if _, exists := r.users[user.ID]; !exists {
-		return nil, nil
-	}
-	r.users[user.ID] = user
-	return user, nil
-}
-
-func (r *StubUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	delete(r.users, id.String())
-	return nil
-}
-
-func (r *StubUserRepository) Get(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	if user, exists := r.users[id.String()]; exists {
-		return user, nil
-	}
-	return nil, nil
-}
-
-func (r *StubUserRepository) List(ctx context.Context, filters *dto.UserFilters) ([]*model.User, int64, error) {
-	var list []*model.User
-	for _, u := range r.users {
-		list = append(list, u)
-	}
-	return list, int64(len(list)), nil
-}
-
-func (r *StubUserRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
-	for _, u := range r.users {
-		if u.Email == email {
-			return u, nil
-		}
-	}
-	return nil, nil
-}
-
-func (r *StubUserRepository) FindByUsername(ctx context.Context, username string) (*model.User, error) {
-	for _, u := range r.users {
-		if u.Username == username {
-			return u, nil
-		}
-	}
-	return nil, nil
-}
-
-func (r *StubUserRepository) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*model.User, int64, error) {
-	var list []*model.User
-	for _, u := range r.users {
-		if u.Role == constants.RoleOperator && u.OperatorStatus == constants.OperatorStatusVerified && u.IsAvailable {
-			list = append(list, u)
-		}
-	}
-	return list, int64(len(list)), nil
-}
-
-// StubSessionRepository для тестов.
-type StubSessionRepository struct{}
-
-func (StubSessionRepository) Create(ctx context.Context, s *model.UserSession) (*model.UserSession, error) {
-	return s, nil
-}
-func (StubSessionRepository) Update(ctx context.Context, s *model.UserSession) (*model.UserSession, error) {
-	return s, nil
-}
-func (StubSessionRepository) Get(ctx context.Context, id uuid.UUID) (*model.UserSession, error) {
-	return nil, nil
-}
-func (StubSessionRepository) ListByUserID(ctx context.Context, userID string, limit, offset int) ([]*model.UserSession, int64, error) {
-	return nil, 0, nil
-}
-func (StubSessionRepository) CountActiveByUserID(ctx context.Context, userID string) (int64, error) {
-	return 0, nil
-}
-func (StubSessionRepository) ListActiveByUserID(ctx context.Context, userID string) ([]*model.UserSession, error) {
-	return nil, nil
+	return db
 }
 
 func TestUserService_CreateAndLogin(t *testing.T) {
-	repo := NewStubUserRepository()
-	s := NewUserService(repo, StubSessionRepository{})
+	db := testDB(t)
+	s := NewUserService(db)
 	ctx := context.Background()
 
 	req := &dto.CreateUserRequest{

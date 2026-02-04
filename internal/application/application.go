@@ -16,7 +16,6 @@ import (
 	"github.com/psds-microservice/user-service/internal/database"
 	grpcserver "github.com/psds-microservice/user-service/internal/grpc"
 	"github.com/psds-microservice/user-service/internal/handler"
-	"github.com/psds-microservice/user-service/internal/repository"
 	"github.com/psds-microservice/user-service/internal/service"
 	"github.com/psds-microservice/user-service/internal/validator"
 	"github.com/psds-microservice/user-service/pkg/constants"
@@ -72,9 +71,7 @@ func NewAPI(cfg *config.Config) (*API, error) {
 		return nil, fmt.Errorf("db: %w", err)
 	}
 
-	userRepo := repository.NewUserRepository(db)
-	sessionRepo := repository.NewUserSessionRepository(db)
-	userSvc := service.NewUserService(userRepo, sessionRepo)
+	userSvc := service.NewUserService(db)
 	val := validator.New()
 
 	jwtCfg, err := auth.NewConfig(cfg.JWTSecret, cfg.JWTAccess, cfg.JWTRefresh)
