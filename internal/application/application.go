@@ -72,6 +72,10 @@ func NewAPI(cfg *config.Config) (*API, error) {
 	}
 
 	userSvc := service.NewUserService(db)
+	authSvc := service.NewAuthService(db)
+	operatorSvc := service.NewOperatorService(db)
+	presenceSvc := service.NewPresenceService(db)
+	sessionSvc := service.NewSessionService(db)
 	val := validator.New()
 
 	jwtCfg, err := auth.NewConfig(cfg.JWTSecret, cfg.JWTAccess, cfg.JWTRefresh)
@@ -86,7 +90,16 @@ func NewAPI(cfg *config.Config) (*API, error) {
 		return nil, fmt.Errorf("grpc listen %s: %w (порт занят — остановите другой процесс или задайте GRPC_PORT в .env)", grpcAddr, err)
 	}
 	grpcSrv := grpc.NewServer()
-	gwImpl := grpcserver.NewServer(userSvc, jwtCfg, blacklist, val)
+	gwImpl := grpcserver.NewServer(grpcserver.Deps{
+		User:      userSvc,
+		Auth:      authSvc,
+		Operator:  operatorSvc,
+		Presence:  presenceSvc,
+		Session:   sessionSvc,
+		JWTConfig: jwtCfg,
+		Blacklist: blacklist,
+		Validate:  val,
+	})
 	user_service.RegisterUserServiceServer(grpcSrv, gwImpl)
 	reflection.Register(grpcSrv)
 
