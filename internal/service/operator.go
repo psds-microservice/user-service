@@ -69,7 +69,7 @@ func (s *operatorService) ListAvailableOperators(ctx context.Context, limit, off
 
 func (s *operatorService) UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error) {
 	if _, err := uuid.Parse(userID); err != nil {
-		return nil, ErrInvalidUserID
+		return nil, errs.ErrInvalidUserID
 	}
 	user, err := s.getByID(ctx, userID)
 	if err != nil {
@@ -90,7 +90,7 @@ func (s *operatorService) VerifyOperator(ctx context.Context, operatorID string,
 		return nil, errs.ErrInvalidOperatorStatus
 	}
 	if _, err := uuid.Parse(operatorID); err != nil {
-		return nil, ErrInvalidUserID
+		return nil, errs.ErrInvalidUserID
 	}
 	user, err := s.getByID(ctx, operatorID)
 	if err != nil {

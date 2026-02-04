@@ -131,7 +131,7 @@ func (s *userService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 
 func (s *userService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
 	if _, err := uuid.Parse(req.ID); err != nil {
-		return nil, ErrInvalidUserID
+		return nil, errs.ErrInvalidUserID
 	}
 	user, err := s.getByID(ctx, req.ID)
 	if err != nil {
@@ -173,14 +173,14 @@ func (s *userService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 
 func (s *userService) DeleteUser(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return ErrInvalidUserID
+		return errs.ErrInvalidUserID
 	}
 	return s.db.WithContext(ctx).Delete(&model.User{}, "id = ?", id).Error
 }
 
 func (s *userService) GetUser(ctx context.Context, id string) (*dto.UserResponse, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, ErrInvalidUserID
+		return nil, errs.ErrInvalidUserID
 	}
 	user, err := s.getByID(ctx, id)
 	if err != nil {

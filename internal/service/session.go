@@ -145,7 +145,7 @@ func (s *sessionService) CreateSession(ctx context.Context, userID string, req *
 		return nil, errs.ErrClientStreamingLimit
 	}
 	if user.Role == constants.RoleOperator && (user.OperatorStatus != constants.OperatorStatusVerified || !user.IsAvailable) {
-		return nil, ErrOperatorNotVerifiedOrAvailable
+		return nil, errs.ErrOperatorNotVerifiedOrAvailable
 	}
 	if int(activeCount) >= user.MaxSessions {
 		user.IsAvailable = false
