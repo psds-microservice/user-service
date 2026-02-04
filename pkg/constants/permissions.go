@@ -1,6 +1,6 @@
 package constants
 
-// Разрешения (permissions) по действиям (promt.txt).
+// Разрешения (permissions) по действиям. Используются в JWT и при проверках прав в user-service и связанных сервисах.
 const (
 	PermStreamCreate     = "stream:create"
 	PermStreamJoin       = "stream:join"
@@ -11,7 +11,7 @@ const (
 	PermOperatorStats    = "operator:stats"
 )
 
-// PermissionsByRole — маппинг ролей на списки разрешений.
+// PermissionsByRole — маппинг ролей на списки разрешений (домен user-service).
 var PermissionsByRole = map[string][]string{
 	RoleClient:   {PermStreamCreate, PermStreamJoin, PermChatSend, PermFileUpload},
 	RoleOperator: {PermStreamJoin, PermChatSend, PermFileUpload, PermConsultationJoin},

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/psds-microservice/helpy/paths"
 	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/config"
 	"github.com/psds-microservice/user-service/internal/database"
@@ -18,7 +19,6 @@ import (
 	"github.com/psds-microservice/user-service/internal/handler"
 	"github.com/psds-microservice/user-service/internal/service"
 	"github.com/psds-microservice/user-service/internal/validator"
-	"github.com/psds-microservice/user-service/pkg/constants"
 	"github.com/psds-microservice/user-service/pkg/gen/user_service"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"google.golang.org/grpc"
@@ -96,10 +96,10 @@ func NewAPI(cfg *config.Config) (*API, error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc(constants.PathHealth, handler.Health)
-	mux.HandleFunc(constants.PathReady, handler.Ready)
-	mux.HandleFunc(constants.PathSwagger+"/openapi.json", serveOpenAPISpec())
-	mux.Handle(constants.PathSwagger+"/", httpSwagger.Handler(
+	mux.HandleFunc(paths.PathHealth, handler.Health)
+	mux.HandleFunc(paths.PathReady, handler.Ready)
+	mux.HandleFunc(paths.PathSwagger+"/openapi.json", serveOpenAPISpec())
+	mux.Handle(paths.PathSwagger+"/", httpSwagger.Handler(
 		httpSwagger.URL("openapi.json"),
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("list"),

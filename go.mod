@@ -5,7 +5,8 @@ go 1.24.0
 toolchain go1.24.4
 
 // Общие типы и proto (psds-microservice/helpy), генерация proto (psds-microservice/infra)
-// После генерации: go get github.com/psds-microservice/helpy@latest при необходимости
+// Константы (paths, roles, permissions, http) — github.com/psds-microservice/helpy
+replace github.com/psds-microservice/helpy => ../helpy
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -13,6 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7
 	github.com/joho/godotenv v1.5.1
+	github.com/psds-microservice/helpy v0.0.0
 	github.com/spf13/cobra v1.10.2
 	github.com/swaggo/http-swagger v1.3.4
 	golang.org/x/crypto v0.47.0

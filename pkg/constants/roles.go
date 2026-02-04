@@ -1,6 +1,6 @@
 package constants
 
-// Роли пользователей
+// Роли пользователей (домен user-service). Источник истины — этот сервис (БД, бизнес-логика).
 const (
 	RoleClient   = "client"
 	RoleOperator = "operator"
