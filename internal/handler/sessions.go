@@ -8,15 +8,17 @@ import (
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/middleware"
 	"github.com/psds-microservice/user-service/internal/service"
+	"github.com/psds-microservice/user-service/internal/validator"
 )
 
 // SessionsHandler — GET/POST /api/v1/users/{id}/sessions, GET .../active-sessions.
 type SessionsHandler struct {
-	svc service.IUserService
+	svc      service.IUserService
+	validate *validator.Validator
 }
 
-func NewSessionsHandler(svc service.IUserService) *SessionsHandler {
-	return &SessionsHandler{svc: svc}
+func NewSessionsHandler(svc service.IUserService, validate *validator.Validator) *SessionsHandler {
+	return &SessionsHandler{svc: svc, validate: validate}
 }
 
 func (h *SessionsHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +110,10 @@ func (h *SessionsHandler) CreateSession(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	if err := h.validate.ValidateCreateSessionRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	session, err := h.svc.CreateSession(r.Context(), userID, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -130,6 +136,10 @@ func (h *SessionsHandler) ValidateSession(w http.ResponseWriter, r *http.Request
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := h.validate.ValidateSessionValidateRequest(req.UserID, req.SessionExternalID); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	allowed, err := h.svc.ValidateUserSession(r.Context(), req.UserID, req.SessionExternalID, req.ParticipantRole)

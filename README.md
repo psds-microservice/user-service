@@ -31,6 +31,7 @@
 
 - **Proto**: `pkg/user_service/user_service.proto`. Сгенерированный Go: `pkg/gen/user_service/`.
 - **Генерация Go из proto**: `make proto` (локальный `protoc` или Docker из `infra`). В целях proto добавлен `-I third_party` для `google/api/annotations.proto`.
+- **grpc-gateway**: HTTP-маршруты для `/api/v1/` берутся **только из proto** (ручная таблица маршрутов удалена). Перед первой сборкой выполните: `go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest` и `make proto-generate` — появится `pkg/gen/user_service/user_service.pb.gw.go`. Подробнее: **docs/GATEWAY.md**.
 - **OpenAPI из proto**: `make proto-openapi` (нужны `protoc` и `protoc-gen-openapiv2`). Результат: `api/openapi.json` / `api/openapi.swagger.json`. Swagger UI: `http://localhost:8080/swagger/index.html`.
 
 ## Deploy

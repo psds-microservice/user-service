@@ -58,7 +58,8 @@ help:
 	@echo "  make vet            - Проверка кода"
 	@echo "  make fmt            - Форматирование кода"
 	@echo "  make security-check - Проверка безопасности"
-	@echo "  make proto-openapi - Сгенерировать OpenAPI/Swagger из .proto (protoc-gen-openapiv2)"
+	@echo "  make proto-openapi    - Сгенерировать OpenAPI/Swagger из .proto"
+	@echo "  make proto-http-paths - Сгенерировать константы путей из proto (router)"
 	@echo ""
 
 ## 📄 OpenAPI/Swagger из proto (единый источник правды — .proto)
@@ -74,6 +75,10 @@ proto-openapi:
 		--openapiv2_opt=merge_file_name=openapi \
 		$(PROTO_ROOT)/user_service.proto
 	@if [ -f $(OPENAPI_OUT)/openapi.swagger.json ]; then cp $(OPENAPI_OUT)/openapi.swagger.json $(OPENAPI_OUT)/openapi.json; echo "✅ OpenAPI: $(OPENAPI_SPEC)"; elif [ -f $(OPENAPI_OUT)/openapi.json ]; then echo "✅ OpenAPI: $(OPENAPI_SPEC)"; else echo "⚠ Проверьте вывод protoc выше"; fi
+
+## 🛣️ Константы HTTP-путей из proto (google.api.http) — единственный источник путей для router
+proto-http-paths:
+	@go run scripts/gen_http_paths.go
 
 ## 📦 Proto файлы (образ из https://github.com/psds-microservice/infra)
 proto: proto-build proto-generate
@@ -102,19 +107,24 @@ proto-generate:
 		$(MAKE) proto-generate-docker; \
 	fi
 
-# Локальная генерация: protoc + protoc-gen-go, protoc-gen-go-grpc из PATH или go install
+# Локальная генерация: protoc + go + grpc + grpc-gateway (как в contract-service: все RPC сразу в HTTP по proto).
 proto-generate-local:
 	@echo "🔧 Generating Go code (local protoc)..."
 	@mkdir -p $(GEN_DIR)
+	@command -v protoc-gen-grpc-gateway >/dev/null 2>&1 || (echo "Установите: go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest" && exit 1)
 	@PATH="$$(go env GOPATH)/bin:$$PATH"; \
 	for f in $(PROTO_ROOT)/*.proto; do \
 		[ -f "$$f" ] || continue; \
 		echo "📁 Processing: $$f"; \
-		protoc -I $(PROTO_ROOT) -I third_party --go_out=. --go_opt=module=$(GO_MODULE) --go-grpc_out=. --go-grpc_opt=module=$(GO_MODULE) "$$f" || exit 1; \
+		protoc -I $(PROTO_ROOT) -I third_party \
+			--go_out=. --go_opt=module=$(GO_MODULE) \
+			--go-grpc_out=. --go-grpc_opt=module=$(GO_MODULE) \
+			--grpc-gateway_out=. --grpc-gateway_opt=module=$(GO_MODULE) \
+			"$$f" || exit 1; \
 	done
 	@echo "✅ Generated in $(GEN_DIR)"
 
-# Docker: обходим entrypoint образа infra (exec entrypoint.sh: no such file or directory)
+# Docker: обходим entrypoint образа infra; добавляем grpc-gateway (образ должен содержать protoc-gen-grpc-gateway).
 proto-generate-docker:
 	@echo "🔧 Generating Go code (Docker)..."
 	@mkdir -p $(GEN_DIR)
@@ -130,6 +140,7 @@ proto-generate-docker:
 		protoc -I $$PROTO_ROOT -I third_party -I /include \
 		--go_out=. --go_opt=module=$$MODULE \
 		--go-grpc_out=. --go-grpc_opt=module=$$MODULE \
+		--grpc-gateway_out=. --grpc-gateway_opt=module=$$MODULE \
 		"$$f" || exit 1; \
 		done && echo "✅ Generated in $(GEN_DIR)" \
 		'

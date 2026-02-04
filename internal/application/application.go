@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/config"
 	"github.com/psds-microservice/user-service/internal/database"
@@ -72,7 +73,6 @@ func NewAPI(cfg *config.Config) (*API, error) {
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewUserSessionRepository(db)
 	userSvc := service.NewUserService(userRepo, sessionRepo)
-	userHandler := handler.NewUserHandler(userSvc)
 
 	jwtCfg, err := auth.NewConfig(cfg.JWTSecret, cfg.JWTAccess, cfg.JWTRefresh)
 	if err != nil {
@@ -80,29 +80,34 @@ func NewAPI(cfg *config.Config) (*API, error) {
 	}
 	blacklist := auth.NewBlacklist()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc(constants.PathHealth, handler.Health)
-	mux.HandleFunc(constants.PathReady, handler.Ready)
-	// OpenAPI-спека из proto (api/openapi.json), генерируется: make proto-openapi
-	mux.HandleFunc(constants.PathSwagger+"/openapi.json", serveOpenAPISpec())
-	mux.Handle(constants.PathSwagger+"/", httpSwagger.Handler(
-		httpSwagger.URL("openapi.json"),
-		httpSwagger.DeepLinking(true),
-		httpSwagger.DocExpansion("list"),
-	))
-	mux.Handle(constants.BasePathAPI+"/", handler.APIv1(userSvc, jwtCfg, blacklist, userHandler))
-
-	httpAddr := cfg.AppHost + ":" + cfg.HTTPPort
-	httpSrv := &http.Server{Addr: httpAddr, Handler: mux}
-
 	grpcAddr := cfg.AppHost + ":" + cfg.GRPCPort
 	lis, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("grpc listen %s: %w (порт занят — остановите другой процесс или задайте GRPC_PORT в .env)", grpcAddr, err)
 	}
 	grpcSrv := grpc.NewServer()
-	user_service.RegisterUserServiceServer(grpcSrv, grpcserver.NewServer(userSvc))
+	gwImpl := grpcserver.NewServer(userSvc, jwtCfg, blacklist)
+	user_service.RegisterUserServiceServer(grpcSrv, gwImpl)
 	reflection.Register(grpcSrv)
+
+	gatewayMux := runtime.NewServeMux()
+	if err := user_service.RegisterUserServiceHandlerServer(context.Background(), gatewayMux, gwImpl); err != nil {
+		return nil, fmt.Errorf("register grpc-gateway: %w", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc(constants.PathHealth, handler.Health)
+	mux.HandleFunc(constants.PathReady, handler.Ready)
+	mux.HandleFunc(constants.PathSwagger+"/openapi.json", serveOpenAPISpec())
+	mux.Handle(constants.PathSwagger+"/", httpSwagger.Handler(
+		httpSwagger.URL("openapi.json"),
+		httpSwagger.DeepLinking(true),
+		httpSwagger.DocExpansion("list"),
+	))
+	mux.Handle("/", gatewayMux)
+
+	httpAddr := cfg.AppHost + ":" + cfg.HTTPPort
+	httpSrv := &http.Server{Addr: httpAddr, Handler: mux}
 
 	return &API{
 		cfg:     cfg,

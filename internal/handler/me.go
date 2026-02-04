@@ -7,15 +7,17 @@ import (
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/middleware"
 	"github.com/psds-microservice/user-service/internal/service"
+	"github.com/psds-microservice/user-service/internal/validator"
 )
 
 // MeHandler — GET/PUT /api/v1/users/me (текущий пользователь).
 type MeHandler struct {
-	svc service.IUserService
+	svc      service.IUserService
+	validate *validator.Validator
 }
 
-func NewMeHandler(svc service.IUserService) *MeHandler {
-	return &MeHandler{svc: svc}
+func NewMeHandler(svc service.IUserService, validate *validator.Validator) *MeHandler {
+	return &MeHandler{svc: svc, validate: validate}
 }
 
 func (h *MeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +55,10 @@ func (h *MeHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.ID = claims.UserID
+	if err := h.validate.ValidateUpdateUserRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	user, err := h.svc.UpdateUser(r.Context(), &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

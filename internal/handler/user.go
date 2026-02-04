@@ -8,14 +8,16 @@ import (
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/middleware"
 	"github.com/psds-microservice/user-service/internal/service"
+	"github.com/psds-microservice/user-service/internal/validator"
 )
 
 type UserHandler struct {
-	service service.IUserService
+	service  service.IUserService
+	validate *validator.Validator
 }
 
-func NewUserHandler(service service.IUserService) *UserHandler {
-	return &UserHandler{service: service}
+func NewUserHandler(service service.IUserService, validate *validator.Validator) *UserHandler {
+	return &UserHandler{service: service, validate: validate}
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +31,10 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
+	if err := h.validate.ValidateCreateUserRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	resp, err := h.service.CreateUser(r.Context(), &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,6 +113,10 @@ func (h *UserHandler) UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.ID = id
+	if err := h.validate.ValidateUpdateUserRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	resp, err := h.service.UpdateUser(r.Context(), &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -155,6 +164,10 @@ func (h *UserHandler) CreateUserJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	if err := h.validate.ValidateCreateUserRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	resp, err := h.service.CreateUser(r.Context(), &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -170,7 +183,7 @@ func (h *UserHandler) UpdatePresence(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	id := r.PathValue("id")
+	id := r.PathValue("user_id") // путь из proto: /users/{user_id}/presence
 	if id == "" {
 		http.Error(w, "user id required", http.StatusBadRequest)
 		return

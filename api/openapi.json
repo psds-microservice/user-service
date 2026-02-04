@@ -23,7 +23,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/user_serviceUserResponse"
+              "$ref": "#/definitions/user_serviceAuthResponse"
             }
           },
           "default": {
@@ -40,6 +40,134 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/user_serviceLoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "UserService_Logout",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceLogoutResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user_serviceLogoutRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "UserService_Refresh",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceAuthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user_serviceRefreshRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "UserService_Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceAuthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user_serviceRegisterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/api/v1/operators/availability": {
+      "put": {
+        "operationId": "UserService_UpdateOperatorAvailability",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceUpdateOperatorStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user_serviceUpdateOperatorStatusRequest"
             }
           }
         ],
@@ -79,6 +207,66 @@
             "required": false,
             "type": "integer",
             "format": "int32"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/api/v1/operators/stats": {
+      "get": {
+        "operationId": "UserService_GetOperatorStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceGetOperatorStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/api/v1/operators/{id}/verify": {
+      "post": {
+        "operationId": "UserService_VerifyOperator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserServiceVerifyOperatorBody"
+            }
           }
         ],
         "tags": [
@@ -188,6 +376,58 @@
         ]
       }
     },
+    "/api/v1/users/me": {
+      "get": {
+        "operationId": "UserService_GetMe",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "UserService"
+        ]
+      },
+      "put": {
+        "operationId": "UserService_UpdateMe",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user_serviceUpdateUserRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
     "/api/v1/users/{id}": {
       "get": {
         "operationId": "UserService_GetUser",
@@ -285,6 +525,117 @@
         ]
       }
     },
+    "/api/v1/users/{id}/active-sessions": {
+      "get": {
+        "operationId": "UserService_GetActiveSessions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceGetActiveSessionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/sessions": {
+      "get": {
+        "operationId": "UserService_GetUserSessions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceGetUserSessionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      },
+      "post": {
+        "operationId": "UserService_CreateSession",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/user_serviceUserSessionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "user_id from path /api/v1/users/{id}/sessions",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UserServiceCreateSessionBody"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
     "/api/v1/users/{userId}/presence": {
       "put": {
         "operationId": "UserService_UpdateUserPresence",
@@ -325,6 +676,20 @@
     }
   },
   "definitions": {
+    "UserServiceCreateSessionBody": {
+      "type": "object",
+      "properties": {
+        "sessionType": {
+          "type": "string"
+        },
+        "sessionExternalId": {
+          "type": "string"
+        },
+        "participantRole": {
+          "type": "string"
+        }
+      }
+    },
     "UserServiceUpdateOperatorStatusBody": {
       "type": "object",
       "properties": {
@@ -362,6 +727,14 @@
         }
       }
     },
+    "UserServiceVerifyOperatorBody": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -390,6 +763,24 @@
         }
       }
     },
+    "user_serviceAuthResponse": {
+      "type": "object",
+      "properties": {
+        "accessToken": {
+          "type": "string"
+        },
+        "refreshToken": {
+          "type": "string"
+        },
+        "expiresIn": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "user": {
+          "$ref": "#/definitions/user_serviceUserResponse"
+        }
+      }
+    },
     "user_serviceCreateUserRequest": {
       "type": "object",
       "properties": {
@@ -415,6 +806,18 @@
         }
       }
     },
+    "user_serviceGetActiveSessionsResponse": {
+      "type": "object",
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/user_serviceUserSessionResponse"
+          }
+        }
+      }
+    },
     "user_serviceGetAvailableOperatorsResponse": {
       "type": "object",
       "properties": {
@@ -434,6 +837,38 @@
         }
       }
     },
+    "user_serviceGetOperatorStatsResponse": {
+      "type": "object",
+      "properties": {
+        "totalSessions": {
+          "type": "string",
+          "format": "int64"
+        },
+        "rating": {
+          "type": "number",
+          "format": "double"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "user_serviceGetUserSessionsResponse": {
+      "type": "object",
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/user_serviceUserSessionResponse"
+          }
+        },
+        "total": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "user_serviceLoginRequest": {
       "type": "object",
       "properties": {
@@ -442,6 +877,48 @@
         },
         "password": {
           "type": "string"
+        }
+      }
+    },
+    "user_serviceLogoutRequest": {
+      "type": "object"
+    },
+    "user_serviceLogoutResponse": {
+      "type": "object"
+    },
+    "user_serviceRefreshRequest": {
+      "type": "object",
+      "properties": {
+        "refreshToken": {
+          "type": "string"
+        }
+      }
+    },
+    "user_serviceRegisterRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      }
+    },
+    "user_serviceUpdateOperatorStatusRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "isAvailable": {
+          "type": "boolean"
         }
       }
     },
@@ -463,6 +940,31 @@
           "type": "boolean"
         },
         "error": {
+          "type": "string"
+        }
+      }
+    },
+    "user_serviceUpdateUserRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "UUID"
+        },
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string",
+          "title": "Optional, empty if not changing"
+        },
+        "status": {
           "type": "string"
         }
       }
@@ -495,6 +997,34 @@
         },
         "error": {
           "type": "string"
+        }
+      }
+    },
+    "user_serviceUserSessionResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "sessionType": {
+          "type": "string"
+        },
+        "sessionExternalId": {
+          "type": "string"
+        },
+        "participantRole": {
+          "type": "string"
+        },
+        "joinedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "leftAt": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },

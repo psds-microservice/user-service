@@ -31,11 +31,41 @@ service UserService {
       delete: "/api/v1/users/{id}"
     };
   }
-  rpc Login (LoginRequest) returns (UserResponse) {
-    option (google.api.http) = {
-      post: "/api/v1/auth/login"
-      body: "*"
-    };
+  rpc Login (LoginRequest) returns (AuthResponse) {
+    option (google.api.http) = { post: "/api/v1/auth/login"; body: "*"; };
+  }
+  rpc Register (RegisterRequest) returns (AuthResponse) {
+    option (google.api.http) = { post: "/api/v1/auth/register"; body: "*"; };
+  }
+  rpc Refresh (RefreshRequest) returns (AuthResponse) {
+    option (google.api.http) = { post: "/api/v1/auth/refresh"; body: "*"; };
+  }
+  rpc Logout (LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = { post: "/api/v1/auth/logout"; body: "*"; };
+  }
+  rpc GetMe (GetMeRequest) returns (UserResponse) {
+    option (google.api.http) = { get: "/api/v1/users/me"; };
+  }
+  rpc UpdateMe (UpdateUserRequest) returns (UserResponse) {
+    option (google.api.http) = { put: "/api/v1/users/me"; body: "*"; };
+  }
+  rpc GetUserSessions (GetUserSessionsRequest) returns (GetUserSessionsResponse) {
+    option (google.api.http) = { get: "/api/v1/users/{id}/sessions"; };
+  }
+  rpc GetActiveSessions (GetActiveSessionsRequest) returns (GetActiveSessionsResponse) {
+    option (google.api.http) = { get: "/api/v1/users/{id}/active-sessions"; };
+  }
+  rpc CreateSession (CreateSessionRequest) returns (UserSessionResponse) {
+    option (google.api.http) = { post: "/api/v1/users/{id}/sessions"; body: "*"; };
+  }
+  rpc UpdateOperatorAvailability (UpdateOperatorStatusRequest) returns (UpdateOperatorStatusResponse) {
+    option (google.api.http) = { put: "/api/v1/operators/availability"; body: "*"; };
+  }
+  rpc VerifyOperator (VerifyOperatorRequest) returns (UserResponse) {
+    option (google.api.http) = { post: "/api/v1/operators/{id}/verify"; body: "*"; };
+  }
+  rpc GetOperatorStats (GetOperatorStatsRequest) returns (GetOperatorStatsResponse) {
+    option (google.api.http) = { get: "/api/v1/operators/stats"; };
   }
   rpc ValidateUserSession (ValidateUserSessionRequest) returns (ValidateUserSessionResponse) {
     option (google.api.http) = {
@@ -156,4 +186,76 @@ message UpdateOperatorStatusRequest {
 message UpdateOperatorStatusResponse {
   bool success = 1;
   string error = 2;
+}
+
+message AuthResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int32 expires_in = 3;
+  UserResponse user = 4;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string role = 4;
+}
+
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+message LogoutRequest {}
+message LogoutResponse {}
+
+message GetMeRequest {}
+
+message GetUserSessionsRequest {
+  string id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message UserSessionResponse {
+  string id = 1;
+  string user_id = 2;
+  string session_type = 3;
+  string session_external_id = 4;
+  string participant_role = 5;
+  google.protobuf.Timestamp joined_at = 6;
+  google.protobuf.Timestamp left_at = 7;
+}
+
+message GetUserSessionsResponse {
+  repeated UserSessionResponse sessions = 1;
+  int64 total = 2;
+}
+
+message GetActiveSessionsRequest {
+  string id = 1;
+}
+
+message GetActiveSessionsResponse {
+  repeated UserSessionResponse sessions = 1;
+}
+
+message CreateSessionRequest {
+  string id = 4;  // user_id from path /api/v1/users/{id}/sessions
+  string session_type = 1;
+  string session_external_id = 2;
+  string participant_role = 3;
+}
+
+message VerifyOperatorRequest {
+  string id = 1;
+  string status = 2;
+}
+
+message GetOperatorStatsRequest {}
+
+message GetOperatorStatsResponse {
+  int64 total_sessions = 1;
+  double rating = 2;
+  string error = 3;
 }

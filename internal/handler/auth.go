@@ -8,6 +8,7 @@ import (
 	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/service"
+	"github.com/psds-microservice/user-service/internal/validator"
 )
 
 // AuthHandler — register, login, refresh, logout.
@@ -15,10 +16,11 @@ type AuthHandler struct {
 	svc       service.IUserService
 	jwtConfig auth.Config
 	blacklist *auth.Blacklist
+	validate  *validator.Validator
 }
 
-func NewAuthHandler(svc service.IUserService, jwtConfig auth.Config, blacklist *auth.Blacklist) *AuthHandler {
-	return &AuthHandler{svc: svc, jwtConfig: jwtConfig, blacklist: blacklist}
+func NewAuthHandler(svc service.IUserService, jwtConfig auth.Config, blacklist *auth.Blacklist, validate *validator.Validator) *AuthHandler {
+	return &AuthHandler{svc: svc, jwtConfig: jwtConfig, blacklist: blacklist, validate: validate}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +31,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := h.validate.ValidateRegisterRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	createReq := &dto.CreateUserRequest{
@@ -60,6 +66,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	if err := h.validate.ValidateLoginRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	user, err := h.svc.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -81,6 +91,10 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req dto.RefreshRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := h.validate.ValidateRefreshRequest(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	userID, err := h.jwtConfig.ValidateRefresh(req.RefreshToken)

@@ -134,7 +134,7 @@ func (h *OperatorsHandler) SetAvailabilityByID(w http.ResponseWriter, r *http.Re
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	operatorID := r.PathValue("id")
+	operatorID := r.PathValue("user_id") // путь из proto: /operators/{user_id}/availability
 	if operatorID == "" {
 		http.Error(w, "operator id required", http.StatusBadRequest)
 		return

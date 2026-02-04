@@ -19,15 +19,26 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_CreateUser_FullMethodName            = "/user_service.UserService/CreateUser"
-	UserService_GetUser_FullMethodName               = "/user_service.UserService/GetUser"
-	UserService_UpdateUser_FullMethodName            = "/user_service.UserService/UpdateUser"
-	UserService_DeleteUser_FullMethodName            = "/user_service.UserService/DeleteUser"
-	UserService_Login_FullMethodName                 = "/user_service.UserService/Login"
-	UserService_ValidateUserSession_FullMethodName   = "/user_service.UserService/ValidateUserSession"
-	UserService_UpdateUserPresence_FullMethodName    = "/user_service.UserService/UpdateUserPresence"
-	UserService_GetAvailableOperators_FullMethodName = "/user_service.UserService/GetAvailableOperators"
-	UserService_UpdateOperatorStatus_FullMethodName  = "/user_service.UserService/UpdateOperatorStatus"
+	UserService_CreateUser_FullMethodName                 = "/user_service.UserService/CreateUser"
+	UserService_GetUser_FullMethodName                    = "/user_service.UserService/GetUser"
+	UserService_UpdateUser_FullMethodName                 = "/user_service.UserService/UpdateUser"
+	UserService_DeleteUser_FullMethodName                 = "/user_service.UserService/DeleteUser"
+	UserService_Login_FullMethodName                      = "/user_service.UserService/Login"
+	UserService_Register_FullMethodName                   = "/user_service.UserService/Register"
+	UserService_Refresh_FullMethodName                    = "/user_service.UserService/Refresh"
+	UserService_Logout_FullMethodName                     = "/user_service.UserService/Logout"
+	UserService_GetMe_FullMethodName                      = "/user_service.UserService/GetMe"
+	UserService_UpdateMe_FullMethodName                   = "/user_service.UserService/UpdateMe"
+	UserService_GetUserSessions_FullMethodName            = "/user_service.UserService/GetUserSessions"
+	UserService_GetActiveSessions_FullMethodName          = "/user_service.UserService/GetActiveSessions"
+	UserService_CreateSession_FullMethodName              = "/user_service.UserService/CreateSession"
+	UserService_UpdateOperatorAvailability_FullMethodName = "/user_service.UserService/UpdateOperatorAvailability"
+	UserService_VerifyOperator_FullMethodName             = "/user_service.UserService/VerifyOperator"
+	UserService_GetOperatorStats_FullMethodName           = "/user_service.UserService/GetOperatorStats"
+	UserService_ValidateUserSession_FullMethodName        = "/user_service.UserService/ValidateUserSession"
+	UserService_UpdateUserPresence_FullMethodName         = "/user_service.UserService/UpdateUserPresence"
+	UserService_GetAvailableOperators_FullMethodName      = "/user_service.UserService/GetAvailableOperators"
+	UserService_UpdateOperatorStatus_FullMethodName       = "/user_service.UserService/UpdateOperatorStatus"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -40,7 +51,18 @@ type UserServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
-	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
+	GetMe(ctx context.Context, in *GetMeRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	UpdateMe(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	GetUserSessions(ctx context.Context, in *GetUserSessionsRequest, opts ...grpc.CallOption) (*GetUserSessionsResponse, error)
+	GetActiveSessions(ctx context.Context, in *GetActiveSessionsRequest, opts ...grpc.CallOption) (*GetActiveSessionsResponse, error)
+	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*UserSessionResponse, error)
+	UpdateOperatorAvailability(ctx context.Context, in *UpdateOperatorStatusRequest, opts ...grpc.CallOption) (*UpdateOperatorStatusResponse, error)
+	VerifyOperator(ctx context.Context, in *VerifyOperatorRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	GetOperatorStats(ctx context.Context, in *GetOperatorStatsRequest, opts ...grpc.CallOption) (*GetOperatorStatsResponse, error)
 	ValidateUserSession(ctx context.Context, in *ValidateUserSessionRequest, opts ...grpc.CallOption) (*ValidateUserSessionResponse, error)
 	UpdateUserPresence(ctx context.Context, in *UpdateUserPresenceRequest, opts ...grpc.CallOption) (*UpdateUserPresenceResponse, error)
 	GetAvailableOperators(ctx context.Context, in *GetAvailableOperatorsRequest, opts ...grpc.CallOption) (*GetAvailableOperatorsResponse, error)
@@ -95,10 +117,120 @@ func (c *userServiceClient) DeleteUser(ctx context.Context, in *DeleteUserReques
 	return out, nil
 }
 
-func (c *userServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*UserResponse, error) {
+func (c *userServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthResponse)
+	err := c.cc.Invoke(ctx, UserService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthResponse)
+	err := c.cc.Invoke(ctx, UserService_Register_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthResponse)
+	err := c.cc.Invoke(ctx, UserService_Refresh_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogoutResponse)
+	err := c.cc.Invoke(ctx, UserService_Logout_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetMe(ctx context.Context, in *GetMeRequest, opts ...grpc.CallOption) (*UserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UserResponse)
-	err := c.cc.Invoke(ctx, UserService_Login_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UserService_GetMe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateMe(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateMe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserSessions(ctx context.Context, in *GetUserSessionsRequest, opts ...grpc.CallOption) (*GetUserSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserSessionsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetUserSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetActiveSessions(ctx context.Context, in *GetActiveSessionsRequest, opts ...grpc.CallOption) (*GetActiveSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActiveSessionsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetActiveSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*UserSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserSessionResponse)
+	err := c.cc.Invoke(ctx, UserService_CreateSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateOperatorAvailability(ctx context.Context, in *UpdateOperatorStatusRequest, opts ...grpc.CallOption) (*UpdateOperatorStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateOperatorStatusResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateOperatorAvailability_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) VerifyOperator(ctx context.Context, in *VerifyOperatorRequest, opts ...grpc.CallOption) (*UserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserResponse)
+	err := c.cc.Invoke(ctx, UserService_VerifyOperator_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetOperatorStats(ctx context.Context, in *GetOperatorStatsRequest, opts ...grpc.CallOption) (*GetOperatorStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOperatorStatsResponse)
+	err := c.cc.Invoke(ctx, UserService_GetOperatorStats_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +287,18 @@ type UserServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*UserResponse, error)
 	UpdateUser(context.Context, *UpdateUserRequest) (*UserResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
-	Login(context.Context, *LoginRequest) (*UserResponse, error)
+	Login(context.Context, *LoginRequest) (*AuthResponse, error)
+	Register(context.Context, *RegisterRequest) (*AuthResponse, error)
+	Refresh(context.Context, *RefreshRequest) (*AuthResponse, error)
+	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
+	GetMe(context.Context, *GetMeRequest) (*UserResponse, error)
+	UpdateMe(context.Context, *UpdateUserRequest) (*UserResponse, error)
+	GetUserSessions(context.Context, *GetUserSessionsRequest) (*GetUserSessionsResponse, error)
+	GetActiveSessions(context.Context, *GetActiveSessionsRequest) (*GetActiveSessionsResponse, error)
+	CreateSession(context.Context, *CreateSessionRequest) (*UserSessionResponse, error)
+	UpdateOperatorAvailability(context.Context, *UpdateOperatorStatusRequest) (*UpdateOperatorStatusResponse, error)
+	VerifyOperator(context.Context, *VerifyOperatorRequest) (*UserResponse, error)
+	GetOperatorStats(context.Context, *GetOperatorStatsRequest) (*GetOperatorStatsResponse, error)
 	ValidateUserSession(context.Context, *ValidateUserSessionRequest) (*ValidateUserSessionResponse, error)
 	UpdateUserPresence(context.Context, *UpdateUserPresenceRequest) (*UpdateUserPresenceResponse, error)
 	GetAvailableOperators(context.Context, *GetAvailableOperatorsRequest) (*GetAvailableOperatorsResponse, error)
@@ -182,8 +325,41 @@ func (UnimplementedUserServiceServer) UpdateUser(context.Context, *UpdateUserReq
 func (UnimplementedUserServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteUser not implemented")
 }
-func (UnimplementedUserServiceServer) Login(context.Context, *LoginRequest) (*UserResponse, error) {
+func (UnimplementedUserServiceServer) Login(context.Context, *LoginRequest) (*AuthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedUserServiceServer) Register(context.Context, *RegisterRequest) (*AuthResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
+}
+func (UnimplementedUserServiceServer) Refresh(context.Context, *RefreshRequest) (*AuthResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Refresh not implemented")
+}
+func (UnimplementedUserServiceServer) Logout(context.Context, *LogoutRequest) (*LogoutResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
+func (UnimplementedUserServiceServer) GetMe(context.Context, *GetMeRequest) (*UserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMe not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateMe(context.Context, *UpdateUserRequest) (*UserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateMe not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserSessions(context.Context, *GetUserSessionsRequest) (*GetUserSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserSessions not implemented")
+}
+func (UnimplementedUserServiceServer) GetActiveSessions(context.Context, *GetActiveSessionsRequest) (*GetActiveSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetActiveSessions not implemented")
+}
+func (UnimplementedUserServiceServer) CreateSession(context.Context, *CreateSessionRequest) (*UserSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateSession not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateOperatorAvailability(context.Context, *UpdateOperatorStatusRequest) (*UpdateOperatorStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateOperatorAvailability not implemented")
+}
+func (UnimplementedUserServiceServer) VerifyOperator(context.Context, *VerifyOperatorRequest) (*UserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyOperator not implemented")
+}
+func (UnimplementedUserServiceServer) GetOperatorStats(context.Context, *GetOperatorStatsRequest) (*GetOperatorStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetOperatorStats not implemented")
 }
 func (UnimplementedUserServiceServer) ValidateUserSession(context.Context, *ValidateUserSessionRequest) (*ValidateUserSessionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ValidateUserSession not implemented")
@@ -308,6 +484,204 @@ func _UserService_Login_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).Register(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_Register_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).Register(ctx, req.(*RegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_Refresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).Refresh(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_Refresh_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).Refresh(ctx, req.(*RefreshRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_Logout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).Logout(ctx, req.(*LogoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetMe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetMe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetMe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetMe(ctx, req.(*GetMeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateMe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateMe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateMe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateMe(ctx, req.(*UpdateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserSessions(ctx, req.(*GetUserSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetActiveSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetActiveSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetActiveSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetActiveSessions(ctx, req.(*GetActiveSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_CreateSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).CreateSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_CreateSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).CreateSession(ctx, req.(*CreateSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateOperatorAvailability_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateOperatorStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateOperatorAvailability(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateOperatorAvailability_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateOperatorAvailability(ctx, req.(*UpdateOperatorStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_VerifyOperator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyOperatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).VerifyOperator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_VerifyOperator_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).VerifyOperator(ctx, req.(*VerifyOperatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetOperatorStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOperatorStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetOperatorStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetOperatorStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetOperatorStats(ctx, req.(*GetOperatorStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_ValidateUserSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ValidateUserSessionRequest)
 	if err := dec(in); err != nil {
@@ -406,6 +780,50 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _UserService_Login_Handler,
+		},
+		{
+			MethodName: "Register",
+			Handler:    _UserService_Register_Handler,
+		},
+		{
+			MethodName: "Refresh",
+			Handler:    _UserService_Refresh_Handler,
+		},
+		{
+			MethodName: "Logout",
+			Handler:    _UserService_Logout_Handler,
+		},
+		{
+			MethodName: "GetMe",
+			Handler:    _UserService_GetMe_Handler,
+		},
+		{
+			MethodName: "UpdateMe",
+			Handler:    _UserService_UpdateMe_Handler,
+		},
+		{
+			MethodName: "GetUserSessions",
+			Handler:    _UserService_GetUserSessions_Handler,
+		},
+		{
+			MethodName: "GetActiveSessions",
+			Handler:    _UserService_GetActiveSessions_Handler,
+		},
+		{
+			MethodName: "CreateSession",
+			Handler:    _UserService_CreateSession_Handler,
+		},
+		{
+			MethodName: "UpdateOperatorAvailability",
+			Handler:    _UserService_UpdateOperatorAvailability_Handler,
+		},
+		{
+			MethodName: "VerifyOperator",
+			Handler:    _UserService_VerifyOperator_Handler,
+		},
+		{
+			MethodName: "GetOperatorStats",
+			Handler:    _UserService_GetOperatorStats_Handler,
 		},
 		{
 			MethodName: "ValidateUserSession",

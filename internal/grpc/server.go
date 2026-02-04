@@ -2,11 +2,14 @@ package grpc
 
 import (
 	"context"
+	"strings"
 
+	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/service"
 	"github.com/psds-microservice/user-service/pkg/gen/user_service"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -14,11 +17,38 @@ import (
 // Server implements user_service.UserServiceServer.
 type Server struct {
 	user_service.UnimplementedUserServiceServer
-	svc service.IUserService
+	svc       service.IUserService
+	jwtCfg    auth.Config
+	blacklist *auth.Blacklist
 }
 
-func NewServer(svc service.IUserService) *Server {
-	return &Server{svc: svc}
+func NewServer(svc service.IUserService, jwtCfg auth.Config, blacklist *auth.Blacklist) *Server {
+	return &Server{svc: svc, jwtCfg: jwtCfg, blacklist: blacklist}
+}
+
+// userIDFromContext читает Bearer из gRPC metadata и возвращает user_id или "".
+func (s *Server) userIDFromContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+	vals := md.Get("authorization")
+	if len(vals) == 0 {
+		vals = md.Get("Authorization")
+	}
+	for _, v := range vals {
+		if strings.HasPrefix(v, "Bearer ") {
+			claims, err := s.jwtCfg.ValidateAccess(strings.TrimPrefix(v, "Bearer "))
+			if err != nil {
+				return ""
+			}
+			if s.blacklist != nil && s.blacklist.Contains(claims.ID) {
+				return ""
+			}
+			return claims.UserID
+		}
+	}
+	return ""
 }
 
 func (s *Server) CreateUser(ctx context.Context, req *user_service.CreateUserRequest) (*user_service.UserResponse, error) {
@@ -65,12 +95,180 @@ func (s *Server) DeleteUser(ctx context.Context, req *user_service.DeleteUserReq
 	return &user_service.DeleteUserResponse{Success: true}, nil
 }
 
-func (s *Server) Login(ctx context.Context, req *user_service.LoginRequest) (*user_service.UserResponse, error) {
-	resp, err := s.svc.Login(ctx, req.GetEmail(), req.GetPassword())
+func (s *Server) Login(ctx context.Context, req *user_service.LoginRequest) (*user_service.AuthResponse, error) {
+	user, err := s.svc.Login(ctx, req.GetEmail(), req.GetPassword())
+	if err != nil {
+		return &user_service.AuthResponse{User: &user_service.UserResponse{Error: err.Error()}}, nil
+	}
+	access, refresh, err := s.jwtCfg.GeneratePair(user.ID, user.Email, user.Role, user.OperatorStatus, user.IsAvailable)
+	if err != nil {
+		return &user_service.AuthResponse{User: toProtoUserResponse(user)}, nil
+	}
+	return &user_service.AuthResponse{
+		AccessToken:  access,
+		RefreshToken: refresh,
+		ExpiresIn:    900,
+		User:         toProtoUserResponse(user),
+	}, nil
+}
+
+func (s *Server) Register(ctx context.Context, req *user_service.RegisterRequest) (*user_service.AuthResponse, error) {
+	user, err := s.svc.CreateUser(ctx, &dto.CreateUserRequest{
+		Username: req.GetUsername(),
+		Email:    req.GetEmail(),
+		Password: req.GetPassword(),
+		Role:     req.GetRole(),
+	})
+	if err != nil {
+		return &user_service.AuthResponse{User: &user_service.UserResponse{Error: err.Error()}}, nil
+	}
+	access, refresh, err := s.jwtCfg.GeneratePair(user.ID, user.Email, user.Role, user.OperatorStatus, user.IsAvailable)
+	if err != nil {
+		return &user_service.AuthResponse{User: toProtoUserResponse(user)}, nil
+	}
+	return &user_service.AuthResponse{
+		AccessToken:  access,
+		RefreshToken: refresh,
+		ExpiresIn:    900,
+		User:         toProtoUserResponse(user),
+	}, nil
+}
+
+func (s *Server) Refresh(ctx context.Context, req *user_service.RefreshRequest) (*user_service.AuthResponse, error) {
+	userID, err := s.jwtCfg.ValidateRefresh(req.GetRefreshToken())
+	if err != nil {
+		return &user_service.AuthResponse{User: &user_service.UserResponse{Error: "invalid refresh token"}}, nil
+	}
+	user, err := s.svc.GetUser(ctx, userID)
+	if err != nil || user == nil {
+		return &user_service.AuthResponse{User: &user_service.UserResponse{Error: "user not found"}}, nil
+	}
+	access, refresh, err := s.jwtCfg.GeneratePair(user.ID, user.Email, user.Role, user.OperatorStatus, user.IsAvailable)
+	if err != nil {
+		return &user_service.AuthResponse{User: toProtoUserResponse(user)}, nil
+	}
+	return &user_service.AuthResponse{
+		AccessToken:  access,
+		RefreshToken: refresh,
+		ExpiresIn:    900,
+		User:         toProtoUserResponse(user),
+	}, nil
+}
+
+func (s *Server) Logout(ctx context.Context, req *user_service.LogoutRequest) (*user_service.LogoutResponse, error) {
+	// Инвалидация по Bearer из metadata
+	if token := s.bearerFromContext(ctx); token != "" {
+		if claims, err := s.jwtCfg.ValidateAccess(token); err == nil && s.blacklist != nil {
+			exp := claims.ExpiresAt
+			if exp != nil {
+				s.blacklist.Add(claims.ID, exp.Time)
+			}
+		}
+	}
+	return &user_service.LogoutResponse{}, nil
+}
+
+func (s *Server) bearerFromContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+	for _, key := range []string{"authorization", "Authorization"} {
+		vals := md.Get(key)
+		for _, v := range vals {
+			if strings.HasPrefix(v, "Bearer ") {
+				return strings.TrimPrefix(v, "Bearer ")
+			}
+		}
+	}
+	return ""
+}
+
+func (s *Server) GetMe(ctx context.Context, req *user_service.GetMeRequest) (*user_service.UserResponse, error) {
+	userID := s.userIDFromContext(ctx)
+	if userID == "" {
+		return &user_service.UserResponse{Error: "unauthorized"}, nil
+	}
+	resp, err := s.svc.GetUser(ctx, userID)
 	if err != nil {
 		return &user_service.UserResponse{Error: err.Error()}, nil
 	}
 	return toProtoUserResponse(resp), nil
+}
+
+func (s *Server) UpdateMe(ctx context.Context, req *user_service.UpdateUserRequest) (*user_service.UserResponse, error) {
+	userID := s.userIDFromContext(ctx)
+	if userID == "" {
+		return &user_service.UserResponse{Error: "unauthorized"}, nil
+	}
+	resp, err := s.svc.UpdateUser(ctx, &dto.UpdateUserRequest{
+		ID:       userID,
+		Username: req.GetUsername(),
+		Email:    req.GetEmail(),
+		Phone:    req.GetPhone(),
+		Password: req.GetPassword(),
+		Status:   req.GetStatus(),
+	})
+	if err != nil {
+		return &user_service.UserResponse{Error: err.Error()}, nil
+	}
+	return toProtoUserResponse(resp), nil
+}
+
+func (s *Server) GetUserSessions(ctx context.Context, req *user_service.GetUserSessionsRequest) (*user_service.GetUserSessionsResponse, error) {
+	limit, offset := int(req.GetLimit()), int(req.GetOffset())
+	if limit <= 0 {
+		limit = 20
+	}
+	list, total, err := s.svc.GetUserSessions(ctx, req.GetId(), limit, offset)
+	if err != nil {
+		return &user_service.GetUserSessionsResponse{}, nil
+	}
+	out := &user_service.GetUserSessionsResponse{Sessions: make([]*user_service.UserSessionResponse, len(list)), Total: total}
+	for i := range list {
+		out.Sessions[i] = toProtoSessionResponse(list[i])
+	}
+	return out, nil
+}
+
+func (s *Server) GetActiveSessions(ctx context.Context, req *user_service.GetActiveSessionsRequest) (*user_service.GetActiveSessionsResponse, error) {
+	list, err := s.svc.GetActiveSessions(ctx, req.GetId())
+	if err != nil {
+		return &user_service.GetActiveSessionsResponse{}, nil
+	}
+	out := &user_service.GetActiveSessionsResponse{Sessions: make([]*user_service.UserSessionResponse, len(list))}
+	for i := range list {
+		out.Sessions[i] = toProtoSessionResponse(list[i])
+	}
+	return out, nil
+}
+
+func (s *Server) CreateSession(ctx context.Context, req *user_service.CreateSessionRequest) (*user_service.UserSessionResponse, error) {
+	userID := req.GetId()
+	if userID == "" {
+		return &user_service.UserSessionResponse{}, nil
+	}
+	session, err := s.svc.CreateSession(ctx, userID, &dto.CreateSessionRequest{
+		SessionType:       req.GetSessionType(),
+		SessionExternalID: req.GetSessionExternalId(),
+		ParticipantRole:   req.GetParticipantRole(),
+	})
+	if err != nil {
+		return &user_service.UserSessionResponse{}, nil
+	}
+	return toProtoSessionResponse(session), nil
+}
+
+func (s *Server) UpdateOperatorAvailability(ctx context.Context, req *user_service.UpdateOperatorStatusRequest) (*user_service.UpdateOperatorStatusResponse, error) {
+	userID := s.userIDFromContext(ctx)
+	if userID == "" {
+		return &user_service.UpdateOperatorStatusResponse{Error: "unauthorized"}, nil
+	}
+	_, err := s.svc.UpdateAvailability(ctx, userID, req.GetIsAvailable())
+	if err != nil {
+		return &user_service.UpdateOperatorStatusResponse{Success: false, Error: err.Error()}, nil
+	}
+	return &user_service.UpdateOperatorStatusResponse{Success: true}, nil
 }
 
 func (s *Server) ValidateUserSession(ctx context.Context, req *user_service.ValidateUserSessionRequest) (*user_service.ValidateUserSessionResponse, error) {
@@ -115,6 +313,49 @@ func (s *Server) UpdateOperatorStatus(ctx context.Context, req *user_service.Upd
 		return &user_service.UpdateOperatorStatusResponse{Success: false, Error: err.Error()}, nil
 	}
 	return &user_service.UpdateOperatorStatusResponse{Success: true}, nil
+}
+
+func (s *Server) VerifyOperator(ctx context.Context, req *user_service.VerifyOperatorRequest) (*user_service.UserResponse, error) {
+	resp, err := s.svc.VerifyOperator(ctx, req.GetId(), req.GetStatus())
+	if err != nil {
+		return &user_service.UserResponse{Error: err.Error()}, nil
+	}
+	return toProtoUserResponse(resp), nil
+}
+
+func (s *Server) GetOperatorStats(ctx context.Context, req *user_service.GetOperatorStatsRequest) (*user_service.GetOperatorStatsResponse, error) {
+	list, total, err := s.svc.ListAvailableOperators(ctx, 100, 0)
+	if err != nil {
+		return &user_service.GetOperatorStatsResponse{Error: err.Error()}, nil
+	}
+	var rating float64
+	for _, u := range list {
+		rating += u.Rating
+	}
+	if len(list) > 0 {
+		rating /= float64(len(list))
+	}
+	return &user_service.GetOperatorStatsResponse{TotalSessions: total, Rating: rating}, nil
+}
+
+func toProtoSessionResponse(r *dto.UserSessionResponse) *user_service.UserSessionResponse {
+	if r == nil {
+		return nil
+	}
+	out := &user_service.UserSessionResponse{
+		Id:                r.ID,
+		UserId:            r.UserID,
+		SessionType:       r.SessionType,
+		SessionExternalId: r.SessionExternalID,
+		ParticipantRole:   r.ParticipantRole,
+	}
+	if !r.JoinedAt.IsZero() {
+		out.JoinedAt = timestamppb.New(r.JoinedAt)
+	}
+	if r.LeftAt != nil {
+		out.LeftAt = timestamppb.New(*r.LeftAt)
+	}
+	return out
 }
 
 func toProtoUserResponse(r *dto.UserResponse) *user_service.UserResponse {

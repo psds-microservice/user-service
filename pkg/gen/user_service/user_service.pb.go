@@ -983,6 +983,802 @@ func (x *UpdateOperatorStatusResponse) GetError() string {
 	return ""
 }
 
+type AuthResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	ExpiresIn     int32                  `protobuf:"varint,3,opt,name=expires_in,json=expiresIn,proto3" json:"expires_in,omitempty"`
+	User          *UserResponse          `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthResponse) Reset() {
+	*x = AuthResponse{}
+	mi := &file_user_service_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthResponse) ProtoMessage() {}
+
+func (x *AuthResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthResponse.ProtoReflect.Descriptor instead.
+func (*AuthResponse) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *AuthResponse) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *AuthResponse) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+func (x *AuthResponse) GetExpiresIn() int32 {
+	if x != nil {
+		return x.ExpiresIn
+	}
+	return 0
+}
+
+func (x *AuthResponse) GetUser() *UserResponse {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+type RegisterRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisterRequest) Reset() {
+	*x = RegisterRequest{}
+	mi := &file_user_service_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisterRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterRequest) ProtoMessage() {}
+
+func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
+func (*RegisterRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *RegisterRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type RefreshRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefreshRequest) Reset() {
+	*x = RefreshRequest{}
+	mi := &file_user_service_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshRequest) ProtoMessage() {}
+
+func (x *RefreshRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshRequest.ProtoReflect.Descriptor instead.
+func (*RefreshRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *RefreshRequest) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+type LogoutRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogoutRequest) Reset() {
+	*x = LogoutRequest{}
+	mi := &file_user_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogoutRequest) ProtoMessage() {}
+
+func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
+func (*LogoutRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{19}
+}
+
+type LogoutResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogoutResponse) Reset() {
+	*x = LogoutResponse{}
+	mi := &file_user_service_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogoutResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogoutResponse) ProtoMessage() {}
+
+func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
+func (*LogoutResponse) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{20}
+}
+
+type GetMeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMeRequest) Reset() {
+	*x = GetMeRequest{}
+	mi := &file_user_service_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMeRequest) ProtoMessage() {}
+
+func (x *GetMeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMeRequest.ProtoReflect.Descriptor instead.
+func (*GetMeRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{21}
+}
+
+type GetUserSessionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserSessionsRequest) Reset() {
+	*x = GetUserSessionsRequest{}
+	mi := &file_user_service_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserSessionsRequest) ProtoMessage() {}
+
+func (x *GetUserSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserSessionsRequest.ProtoReflect.Descriptor instead.
+func (*GetUserSessionsRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetUserSessionsRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetUserSessionsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *GetUserSessionsRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type UserSessionResponse struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId            string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	SessionType       string                 `protobuf:"bytes,3,opt,name=session_type,json=sessionType,proto3" json:"session_type,omitempty"`
+	SessionExternalId string                 `protobuf:"bytes,4,opt,name=session_external_id,json=sessionExternalId,proto3" json:"session_external_id,omitempty"`
+	ParticipantRole   string                 `protobuf:"bytes,5,opt,name=participant_role,json=participantRole,proto3" json:"participant_role,omitempty"`
+	JoinedAt          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	LeftAt            *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=left_at,json=leftAt,proto3" json:"left_at,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *UserSessionResponse) Reset() {
+	*x = UserSessionResponse{}
+	mi := &file_user_service_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserSessionResponse) ProtoMessage() {}
+
+func (x *UserSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserSessionResponse.ProtoReflect.Descriptor instead.
+func (*UserSessionResponse) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *UserSessionResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UserSessionResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UserSessionResponse) GetSessionType() string {
+	if x != nil {
+		return x.SessionType
+	}
+	return ""
+}
+
+func (x *UserSessionResponse) GetSessionExternalId() string {
+	if x != nil {
+		return x.SessionExternalId
+	}
+	return ""
+}
+
+func (x *UserSessionResponse) GetParticipantRole() string {
+	if x != nil {
+		return x.ParticipantRole
+	}
+	return ""
+}
+
+func (x *UserSessionResponse) GetJoinedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.JoinedAt
+	}
+	return nil
+}
+
+func (x *UserSessionResponse) GetLeftAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LeftAt
+	}
+	return nil
+}
+
+type GetUserSessionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sessions      []*UserSessionResponse `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	Total         int64                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserSessionsResponse) Reset() {
+	*x = GetUserSessionsResponse{}
+	mi := &file_user_service_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserSessionsResponse) ProtoMessage() {}
+
+func (x *GetUserSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserSessionsResponse.ProtoReflect.Descriptor instead.
+func (*GetUserSessionsResponse) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GetUserSessionsResponse) GetSessions() []*UserSessionResponse {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+func (x *GetUserSessionsResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type GetActiveSessionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetActiveSessionsRequest) Reset() {
+	*x = GetActiveSessionsRequest{}
+	mi := &file_user_service_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetActiveSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetActiveSessionsRequest) ProtoMessage() {}
+
+func (x *GetActiveSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetActiveSessionsRequest.ProtoReflect.Descriptor instead.
+func (*GetActiveSessionsRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetActiveSessionsRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetActiveSessionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sessions      []*UserSessionResponse `protobuf:"bytes,1,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetActiveSessionsResponse) Reset() {
+	*x = GetActiveSessionsResponse{}
+	mi := &file_user_service_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetActiveSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetActiveSessionsResponse) ProtoMessage() {}
+
+func (x *GetActiveSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetActiveSessionsResponse.ProtoReflect.Descriptor instead.
+func (*GetActiveSessionsResponse) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetActiveSessionsResponse) GetSessions() []*UserSessionResponse {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+type CreateSessionRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                string                 `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"` // user_id from path /api/v1/users/{id}/sessions
+	SessionType       string                 `protobuf:"bytes,1,opt,name=session_type,json=sessionType,proto3" json:"session_type,omitempty"`
+	SessionExternalId string                 `protobuf:"bytes,2,opt,name=session_external_id,json=sessionExternalId,proto3" json:"session_external_id,omitempty"`
+	ParticipantRole   string                 `protobuf:"bytes,3,opt,name=participant_role,json=participantRole,proto3" json:"participant_role,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CreateSessionRequest) Reset() {
+	*x = CreateSessionRequest{}
+	mi := &file_user_service_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateSessionRequest) ProtoMessage() {}
+
+func (x *CreateSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateSessionRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *CreateSessionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CreateSessionRequest) GetSessionType() string {
+	if x != nil {
+		return x.SessionType
+	}
+	return ""
+}
+
+func (x *CreateSessionRequest) GetSessionExternalId() string {
+	if x != nil {
+		return x.SessionExternalId
+	}
+	return ""
+}
+
+func (x *CreateSessionRequest) GetParticipantRole() string {
+	if x != nil {
+		return x.ParticipantRole
+	}
+	return ""
+}
+
+type VerifyOperatorRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyOperatorRequest) Reset() {
+	*x = VerifyOperatorRequest{}
+	mi := &file_user_service_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyOperatorRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyOperatorRequest) ProtoMessage() {}
+
+func (x *VerifyOperatorRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyOperatorRequest.ProtoReflect.Descriptor instead.
+func (*VerifyOperatorRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *VerifyOperatorRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *VerifyOperatorRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type GetOperatorStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOperatorStatsRequest) Reset() {
+	*x = GetOperatorStatsRequest{}
+	mi := &file_user_service_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOperatorStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOperatorStatsRequest) ProtoMessage() {}
+
+func (x *GetOperatorStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOperatorStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetOperatorStatsRequest) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{29}
+}
+
+type GetOperatorStatsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TotalSessions int64                  `protobuf:"varint,1,opt,name=total_sessions,json=totalSessions,proto3" json:"total_sessions,omitempty"`
+	Rating        float64                `protobuf:"fixed64,2,opt,name=rating,proto3" json:"rating,omitempty"`
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOperatorStatsResponse) Reset() {
+	*x = GetOperatorStatsResponse{}
+	mi := &file_user_service_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOperatorStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOperatorStatsResponse) ProtoMessage() {}
+
+func (x *GetOperatorStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_service_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOperatorStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetOperatorStatsResponse) Descriptor() ([]byte, []int) {
+	return file_user_service_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *GetOperatorStatsResponse) GetTotalSessions() int64 {
+	if x != nil {
+		return x.TotalSessions
+	}
+	return 0
+}
+
+func (x *GetOperatorStatsResponse) GetRating() float64 {
+	if x != nil {
+		return x.Rating
+	}
+	return 0
+}
+
+func (x *GetOperatorStatsResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_user_service_proto protoreflect.FileDescriptor
 
 const file_user_service_proto_rawDesc = "" +
@@ -1055,7 +1851,55 @@ const file_user_service_proto_rawDesc = "" +
 	"\fis_available\x18\x02 \x01(\bR\visAvailable\"N\n" +
 	"\x1cUpdateOperatorStatusResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error2\xf1\b\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"\xa5\x01\n" +
+	"\fAuthResponse\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
+	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x12\x1d\n" +
+	"\n" +
+	"expires_in\x18\x03 \x01(\x05R\texpiresIn\x12.\n" +
+	"\x04user\x18\x04 \x01(\v2\x1a.user_service.UserResponseR\x04user\"s\n" +
+	"\x0fRegisterRequest\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x12\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\"5\n" +
+	"\x0eRefreshRequest\x12#\n" +
+	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"\x0f\n" +
+	"\rLogoutRequest\"\x10\n" +
+	"\x0eLogoutResponse\"\x0e\n" +
+	"\fGetMeRequest\"V\n" +
+	"\x16GetUserSessionsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x03 \x01(\x05R\x06offset\"\xaa\x02\n" +
+	"\x13UserSessionResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
+	"\fsession_type\x18\x03 \x01(\tR\vsessionType\x12.\n" +
+	"\x13session_external_id\x18\x04 \x01(\tR\x11sessionExternalId\x12)\n" +
+	"\x10participant_role\x18\x05 \x01(\tR\x0fparticipantRole\x127\n" +
+	"\tjoined_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\x123\n" +
+	"\aleft_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x06leftAt\"n\n" +
+	"\x17GetUserSessionsResponse\x12=\n" +
+	"\bsessions\x18\x01 \x03(\v2!.user_service.UserSessionResponseR\bsessions\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x03R\x05total\"*\n" +
+	"\x18GetActiveSessionsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"Z\n" +
+	"\x19GetActiveSessionsResponse\x12=\n" +
+	"\bsessions\x18\x01 \x03(\v2!.user_service.UserSessionResponseR\bsessions\"\xa4\x01\n" +
+	"\x14CreateSessionRequest\x12\x0e\n" +
+	"\x02id\x18\x04 \x01(\tR\x02id\x12!\n" +
+	"\fsession_type\x18\x01 \x01(\tR\vsessionType\x12.\n" +
+	"\x13session_external_id\x18\x02 \x01(\tR\x11sessionExternalId\x12)\n" +
+	"\x10participant_role\x18\x03 \x01(\tR\x0fparticipantRole\"?\n" +
+	"\x15VerifyOperatorRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"\x19\n" +
+	"\x17GetOperatorStatsRequest\"o\n" +
+	"\x18GetOperatorStatsResponse\x12%\n" +
+	"\x0etotal_sessions\x18\x01 \x01(\x03R\rtotalSessions\x12\x16\n" +
+	"\x06rating\x18\x02 \x01(\x01R\x06rating\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error2\xa2\x13\n" +
 	"\vUserService\x12c\n" +
 	"\n" +
 	"CreateUser\x12\x1f.user_service.CreateUserRequest\x1a\x1a.user_service.UserResponse\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/api/v1/users\x12_\n" +
@@ -1064,7 +1908,18 @@ const file_user_service_proto_rawDesc = "" +
 	"UpdateUser\x12\x1f.user_service.UpdateUserRequest\x1a\x1a.user_service.UserResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\x1a\x12/api/v1/users/{id}\x12k\n" +
 	"\n" +
 	"DeleteUser\x12\x1f.user_service.DeleteUserRequest\x1a .user_service.DeleteUserResponse\"\x1a\x82\xd3\xe4\x93\x02\x14*\x12/api/v1/users/{id}\x12^\n" +
-	"\x05Login\x12\x1a.user_service.LoginRequest\x1a\x1a.user_service.UserResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12\x90\x01\n" +
+	"\x05Login\x12\x1a.user_service.LoginRequest\x1a\x1a.user_service.AuthResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12g\n" +
+	"\bRegister\x12\x1d.user_service.RegisterRequest\x1a\x1a.user_service.AuthResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/register\x12d\n" +
+	"\aRefresh\x12\x1c.user_service.RefreshRequest\x1a\x1a.user_service.AuthResponse\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/auth/refresh\x12c\n" +
+	"\x06Logout\x12\x1b.user_service.LogoutRequest\x1a\x1c.user_service.LogoutResponse\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/api/v1/auth/logout\x12Y\n" +
+	"\x05GetMe\x12\x1a.user_service.GetMeRequest\x1a\x1a.user_service.UserResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/v1/users/me\x12d\n" +
+	"\bUpdateMe\x12\x1f.user_service.UpdateUserRequest\x1a\x1a.user_service.UserResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\x1a\x10/api/v1/users/me\x12\x83\x01\n" +
+	"\x0fGetUserSessions\x12$.user_service.GetUserSessionsRequest\x1a%.user_service.GetUserSessionsResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/users/{id}/sessions\x12\x90\x01\n" +
+	"\x11GetActiveSessions\x12&.user_service.GetActiveSessionsRequest\x1a'.user_service.GetActiveSessionsResponse\"*\x82\xd3\xe4\x93\x02$\x12\"/api/v1/users/{id}/active-sessions\x12~\n" +
+	"\rCreateSession\x12\".user_service.CreateSessionRequest\x1a!.user_service.UserSessionResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/users/{id}/sessions\x12\x9e\x01\n" +
+	"\x1aUpdateOperatorAvailability\x12).user_service.UpdateOperatorStatusRequest\x1a*.user_service.UpdateOperatorStatusResponse\")\x82\xd3\xe4\x93\x02#:\x01*\x1a\x1e/api/v1/operators/availability\x12{\n" +
+	"\x0eVerifyOperator\x12#.user_service.VerifyOperatorRequest\x1a\x1a.user_service.UserResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/api/v1/operators/{id}/verify\x12\x82\x01\n" +
+	"\x10GetOperatorStats\x12%.user_service.GetOperatorStatsRequest\x1a&.user_service.GetOperatorStatsResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/v1/operators/stats\x12\x90\x01\n" +
 	"\x13ValidateUserSession\x12(.user_service.ValidateUserSessionRequest\x1a).user_service.ValidateUserSessionResponse\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/api/v1/sessions/validate\x12\x94\x01\n" +
 	"\x12UpdateUserPresence\x12'.user_service.UpdateUserPresenceRequest\x1a(.user_service.UpdateUserPresenceResponse\"+\x82\xd3\xe4\x93\x02%:\x01*\x1a /api/v1/users/{user_id}/presence\x12\x95\x01\n" +
 	"\x15GetAvailableOperators\x12*.user_service.GetAvailableOperatorsRequest\x1a+.user_service.GetAvailableOperatorsResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/operators/available\x12\xa2\x01\n" +
@@ -1082,7 +1937,7 @@ func file_user_service_proto_rawDescGZIP() []byte {
 	return file_user_service_proto_rawDescData
 }
 
-var file_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_user_service_proto_goTypes = []any{
 	(*User)(nil),                          // 0: user_service.User
 	(*CreateUserRequest)(nil),             // 1: user_service.CreateUserRequest
@@ -1100,37 +1955,79 @@ var file_user_service_proto_goTypes = []any{
 	(*GetAvailableOperatorsResponse)(nil), // 13: user_service.GetAvailableOperatorsResponse
 	(*UpdateOperatorStatusRequest)(nil),   // 14: user_service.UpdateOperatorStatusRequest
 	(*UpdateOperatorStatusResponse)(nil),  // 15: user_service.UpdateOperatorStatusResponse
-	(*timestamppb.Timestamp)(nil),         // 16: google.protobuf.Timestamp
+	(*AuthResponse)(nil),                  // 16: user_service.AuthResponse
+	(*RegisterRequest)(nil),               // 17: user_service.RegisterRequest
+	(*RefreshRequest)(nil),                // 18: user_service.RefreshRequest
+	(*LogoutRequest)(nil),                 // 19: user_service.LogoutRequest
+	(*LogoutResponse)(nil),                // 20: user_service.LogoutResponse
+	(*GetMeRequest)(nil),                  // 21: user_service.GetMeRequest
+	(*GetUserSessionsRequest)(nil),        // 22: user_service.GetUserSessionsRequest
+	(*UserSessionResponse)(nil),           // 23: user_service.UserSessionResponse
+	(*GetUserSessionsResponse)(nil),       // 24: user_service.GetUserSessionsResponse
+	(*GetActiveSessionsRequest)(nil),      // 25: user_service.GetActiveSessionsRequest
+	(*GetActiveSessionsResponse)(nil),     // 26: user_service.GetActiveSessionsResponse
+	(*CreateSessionRequest)(nil),          // 27: user_service.CreateSessionRequest
+	(*VerifyOperatorRequest)(nil),         // 28: user_service.VerifyOperatorRequest
+	(*GetOperatorStatsRequest)(nil),       // 29: user_service.GetOperatorStatsRequest
+	(*GetOperatorStatsResponse)(nil),      // 30: user_service.GetOperatorStatsResponse
+	(*timestamppb.Timestamp)(nil),         // 31: google.protobuf.Timestamp
 }
 var file_user_service_proto_depIdxs = []int32{
-	16, // 0: user_service.User.created_at:type_name -> google.protobuf.Timestamp
-	16, // 1: user_service.User.updated_at:type_name -> google.protobuf.Timestamp
-	16, // 2: user_service.UserResponse.created_at:type_name -> google.protobuf.Timestamp
-	16, // 3: user_service.UserResponse.updated_at:type_name -> google.protobuf.Timestamp
+	31, // 0: user_service.User.created_at:type_name -> google.protobuf.Timestamp
+	31, // 1: user_service.User.updated_at:type_name -> google.protobuf.Timestamp
+	31, // 2: user_service.UserResponse.created_at:type_name -> google.protobuf.Timestamp
+	31, // 3: user_service.UserResponse.updated_at:type_name -> google.protobuf.Timestamp
 	7,  // 4: user_service.GetAvailableOperatorsResponse.operators:type_name -> user_service.UserResponse
-	1,  // 5: user_service.UserService.CreateUser:input_type -> user_service.CreateUserRequest
-	2,  // 6: user_service.UserService.GetUser:input_type -> user_service.GetUserRequest
-	3,  // 7: user_service.UserService.UpdateUser:input_type -> user_service.UpdateUserRequest
-	4,  // 8: user_service.UserService.DeleteUser:input_type -> user_service.DeleteUserRequest
-	6,  // 9: user_service.UserService.Login:input_type -> user_service.LoginRequest
-	8,  // 10: user_service.UserService.ValidateUserSession:input_type -> user_service.ValidateUserSessionRequest
-	10, // 11: user_service.UserService.UpdateUserPresence:input_type -> user_service.UpdateUserPresenceRequest
-	12, // 12: user_service.UserService.GetAvailableOperators:input_type -> user_service.GetAvailableOperatorsRequest
-	14, // 13: user_service.UserService.UpdateOperatorStatus:input_type -> user_service.UpdateOperatorStatusRequest
-	7,  // 14: user_service.UserService.CreateUser:output_type -> user_service.UserResponse
-	7,  // 15: user_service.UserService.GetUser:output_type -> user_service.UserResponse
-	7,  // 16: user_service.UserService.UpdateUser:output_type -> user_service.UserResponse
-	5,  // 17: user_service.UserService.DeleteUser:output_type -> user_service.DeleteUserResponse
-	7,  // 18: user_service.UserService.Login:output_type -> user_service.UserResponse
-	9,  // 19: user_service.UserService.ValidateUserSession:output_type -> user_service.ValidateUserSessionResponse
-	11, // 20: user_service.UserService.UpdateUserPresence:output_type -> user_service.UpdateUserPresenceResponse
-	13, // 21: user_service.UserService.GetAvailableOperators:output_type -> user_service.GetAvailableOperatorsResponse
-	15, // 22: user_service.UserService.UpdateOperatorStatus:output_type -> user_service.UpdateOperatorStatusResponse
-	14, // [14:23] is the sub-list for method output_type
-	5,  // [5:14] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	7,  // 5: user_service.AuthResponse.user:type_name -> user_service.UserResponse
+	31, // 6: user_service.UserSessionResponse.joined_at:type_name -> google.protobuf.Timestamp
+	31, // 7: user_service.UserSessionResponse.left_at:type_name -> google.protobuf.Timestamp
+	23, // 8: user_service.GetUserSessionsResponse.sessions:type_name -> user_service.UserSessionResponse
+	23, // 9: user_service.GetActiveSessionsResponse.sessions:type_name -> user_service.UserSessionResponse
+	1,  // 10: user_service.UserService.CreateUser:input_type -> user_service.CreateUserRequest
+	2,  // 11: user_service.UserService.GetUser:input_type -> user_service.GetUserRequest
+	3,  // 12: user_service.UserService.UpdateUser:input_type -> user_service.UpdateUserRequest
+	4,  // 13: user_service.UserService.DeleteUser:input_type -> user_service.DeleteUserRequest
+	6,  // 14: user_service.UserService.Login:input_type -> user_service.LoginRequest
+	17, // 15: user_service.UserService.Register:input_type -> user_service.RegisterRequest
+	18, // 16: user_service.UserService.Refresh:input_type -> user_service.RefreshRequest
+	19, // 17: user_service.UserService.Logout:input_type -> user_service.LogoutRequest
+	21, // 18: user_service.UserService.GetMe:input_type -> user_service.GetMeRequest
+	3,  // 19: user_service.UserService.UpdateMe:input_type -> user_service.UpdateUserRequest
+	22, // 20: user_service.UserService.GetUserSessions:input_type -> user_service.GetUserSessionsRequest
+	25, // 21: user_service.UserService.GetActiveSessions:input_type -> user_service.GetActiveSessionsRequest
+	27, // 22: user_service.UserService.CreateSession:input_type -> user_service.CreateSessionRequest
+	14, // 23: user_service.UserService.UpdateOperatorAvailability:input_type -> user_service.UpdateOperatorStatusRequest
+	28, // 24: user_service.UserService.VerifyOperator:input_type -> user_service.VerifyOperatorRequest
+	29, // 25: user_service.UserService.GetOperatorStats:input_type -> user_service.GetOperatorStatsRequest
+	8,  // 26: user_service.UserService.ValidateUserSession:input_type -> user_service.ValidateUserSessionRequest
+	10, // 27: user_service.UserService.UpdateUserPresence:input_type -> user_service.UpdateUserPresenceRequest
+	12, // 28: user_service.UserService.GetAvailableOperators:input_type -> user_service.GetAvailableOperatorsRequest
+	14, // 29: user_service.UserService.UpdateOperatorStatus:input_type -> user_service.UpdateOperatorStatusRequest
+	7,  // 30: user_service.UserService.CreateUser:output_type -> user_service.UserResponse
+	7,  // 31: user_service.UserService.GetUser:output_type -> user_service.UserResponse
+	7,  // 32: user_service.UserService.UpdateUser:output_type -> user_service.UserResponse
+	5,  // 33: user_service.UserService.DeleteUser:output_type -> user_service.DeleteUserResponse
+	16, // 34: user_service.UserService.Login:output_type -> user_service.AuthResponse
+	16, // 35: user_service.UserService.Register:output_type -> user_service.AuthResponse
+	16, // 36: user_service.UserService.Refresh:output_type -> user_service.AuthResponse
+	20, // 37: user_service.UserService.Logout:output_type -> user_service.LogoutResponse
+	7,  // 38: user_service.UserService.GetMe:output_type -> user_service.UserResponse
+	7,  // 39: user_service.UserService.UpdateMe:output_type -> user_service.UserResponse
+	24, // 40: user_service.UserService.GetUserSessions:output_type -> user_service.GetUserSessionsResponse
+	26, // 41: user_service.UserService.GetActiveSessions:output_type -> user_service.GetActiveSessionsResponse
+	23, // 42: user_service.UserService.CreateSession:output_type -> user_service.UserSessionResponse
+	15, // 43: user_service.UserService.UpdateOperatorAvailability:output_type -> user_service.UpdateOperatorStatusResponse
+	7,  // 44: user_service.UserService.VerifyOperator:output_type -> user_service.UserResponse
+	30, // 45: user_service.UserService.GetOperatorStats:output_type -> user_service.GetOperatorStatsResponse
+	9,  // 46: user_service.UserService.ValidateUserSession:output_type -> user_service.ValidateUserSessionResponse
+	11, // 47: user_service.UserService.UpdateUserPresence:output_type -> user_service.UpdateUserPresenceResponse
+	13, // 48: user_service.UserService.GetAvailableOperators:output_type -> user_service.GetAvailableOperatorsResponse
+	15, // 49: user_service.UserService.UpdateOperatorStatus:output_type -> user_service.UpdateOperatorStatusResponse
+	30, // [30:50] is the sub-list for method output_type
+	10, // [10:30] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_user_service_proto_init() }
@@ -1144,7 +2041,7 @@ func file_user_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_service_proto_rawDesc), len(file_user_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
