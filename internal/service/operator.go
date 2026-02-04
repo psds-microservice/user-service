@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/psds-microservice/user-service/internal/dto"
+	"github.com/psds-microservice/user-service/internal/errs"
 	"github.com/psds-microservice/user-service/internal/mapper"
 	"github.com/psds-microservice/user-service/internal/model"
 	"github.com/psds-microservice/user-service/pkg/constants"
@@ -75,7 +76,7 @@ func (s *operatorService) UpdateAvailability(ctx context.Context, userID string,
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, errs.ErrUserNotFound
 	}
 	user.IsAvailable = available
 	if err := s.db.WithContext(ctx).Save(user).Error; err != nil {
@@ -86,7 +87,7 @@ func (s *operatorService) UpdateAvailability(ctx context.Context, userID string,
 
 func (s *operatorService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
 	if status != constants.OperatorStatusPending && status != constants.OperatorStatusVerified && status != constants.OperatorStatusBlocked {
-		return nil, ErrInvalidOperatorStatus
+		return nil, errs.ErrInvalidOperatorStatus
 	}
 	if _, err := uuid.Parse(operatorID); err != nil {
 		return nil, ErrInvalidUserID
@@ -96,10 +97,10 @@ func (s *operatorService) VerifyOperator(ctx context.Context, operatorID string,
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, errs.ErrUserNotFound
 	}
 	if user.Role != constants.RoleOperator {
-		return nil, ErrNotOperator
+		return nil, errs.ErrNotOperator
 	}
 	user.OperatorStatus = status
 	if err := s.db.WithContext(ctx).Save(user).Error; err != nil {

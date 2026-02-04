@@ -1,7 +1,8 @@
-package service
+package errs
 
 import "errors"
 
+// Доменные сентинель-ошибки для маппинга в gRPC/HTTP коды.
 var (
 	ErrUserAlreadyExists              = errors.New("user already exists")
 	ErrInvalidUserID                  = errors.New("invalid user id")

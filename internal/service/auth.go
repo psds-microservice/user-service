@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/psds-microservice/user-service/internal/dto"
+	"github.com/psds-microservice/user-service/internal/errs"
 	"github.com/psds-microservice/user-service/internal/mapper"
 	"github.com/psds-microservice/user-service/internal/model"
 )
@@ -42,10 +43,10 @@ func (s *authService) Login(ctx context.Context, email, password string) (*dto.U
 		return nil, err
 	}
 	if u == nil {
-		return nil, ErrInvalidCredentials
+		return nil, errs.ErrInvalidCredentials
 	}
 	if !checkPassword(u.PasswordHash, password) {
-		return nil, ErrInvalidCredentials
+		return nil, errs.ErrInvalidCredentials
 	}
 	return mapper.UserToResponse(u), nil
 }

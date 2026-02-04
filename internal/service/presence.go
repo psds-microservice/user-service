@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"github.com/psds-microservice/user-service/internal/errs"
 	"github.com/psds-microservice/user-service/internal/model"
 )
 
@@ -38,14 +39,14 @@ func (s *presenceService) getByID(ctx context.Context, id string) (*model.User, 
 
 func (s *presenceService) UpdatePresence(ctx context.Context, userID string, isOnline bool) error {
 	if _, err := uuid.Parse(userID); err != nil {
-		return ErrInvalidUserID
+		return errs.ErrInvalidUserID
 	}
 	user, err := s.getByID(ctx, userID)
 	if err != nil {
 		return err
 	}
 	if user == nil {
-		return ErrUserNotFound
+		return errs.ErrUserNotFound
 	}
 	now := time.Now()
 	user.IsOnline = isOnline

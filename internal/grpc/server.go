@@ -7,6 +7,7 @@ import (
 
 	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/dto"
+	"github.com/psds-microservice/user-service/internal/errs"
 	"github.com/psds-microservice/user-service/internal/service"
 	"github.com/psds-microservice/user-service/internal/validator"
 	"github.com/psds-microservice/user-service/pkg/gen/user_service"
@@ -85,19 +86,19 @@ func (s *Server) mapError(err error) error {
 		return nil
 	}
 	switch {
-	case errors.Is(err, service.ErrInvalidUserID),
-		errors.Is(err, service.ErrInvalidOperatorStatus):
+	case errors.Is(err, errs.ErrInvalidUserID),
+		errors.Is(err, errs.ErrInvalidOperatorStatus):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, service.ErrUserNotFound):
+	case errors.Is(err, errs.ErrUserNotFound):
 		return status.Error(codes.NotFound, err.Error())
-	case errors.Is(err, service.ErrInvalidCredentials):
+	case errors.Is(err, errs.ErrInvalidCredentials):
 		return status.Error(codes.Unauthenticated, "invalid credentials")
-	case errors.Is(err, service.ErrUserAlreadyExists):
+	case errors.Is(err, errs.ErrUserAlreadyExists):
 		return status.Error(codes.AlreadyExists, err.Error())
-	case errors.Is(err, service.ErrNotOperator),
-		errors.Is(err, service.ErrOperatorNotVerifiedOrAvailable),
-		errors.Is(err, service.ErrClientStreamingLimit),
-		errors.Is(err, service.ErrMaxSessionsReached):
+	case errors.Is(err, errs.ErrNotOperator),
+		errors.Is(err, errs.ErrOperatorNotVerifiedOrAvailable),
+		errors.Is(err, errs.ErrClientStreamingLimit),
+		errors.Is(err, errs.ErrMaxSessionsReached):
 		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal error")

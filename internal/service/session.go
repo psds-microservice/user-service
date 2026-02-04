@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/psds-microservice/user-service/internal/dto"
+	"github.com/psds-microservice/user-service/internal/errs"
 	"github.com/psds-microservice/user-service/internal/mapper"
 	"github.com/psds-microservice/user-service/internal/model"
 	"github.com/psds-microservice/user-service/pkg/constants"
@@ -127,21 +128,21 @@ func (s *sessionService) GetActiveSessions(ctx context.Context, userID string) (
 
 func (s *sessionService) CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error) {
 	if _, err := uuid.Parse(userID); err != nil {
-		return nil, ErrInvalidUserID
+		return nil, errs.ErrInvalidUserID
 	}
 	user, err := s.getUserByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, errs.ErrUserNotFound
 	}
 	activeCount, err := s.countActiveByUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	if user.Role == constants.RoleClient && req.SessionType == "streaming" && activeCount >= 1 {
-		return nil, ErrClientStreamingLimit
+		return nil, errs.ErrClientStreamingLimit
 	}
 	if user.Role == constants.RoleOperator && (user.OperatorStatus != constants.OperatorStatusVerified || !user.IsAvailable) {
 		return nil, ErrOperatorNotVerifiedOrAvailable
@@ -149,7 +150,7 @@ func (s *sessionService) CreateSession(ctx context.Context, userID string, req *
 	if int(activeCount) >= user.MaxSessions {
 		user.IsAvailable = false
 		_ = s.db.WithContext(ctx).Save(user)
-		return nil, ErrMaxSessionsReached
+		return nil, errs.ErrMaxSessionsReached
 	}
 	session := &model.UserSession{
 		ID:                uuid.New().String(),

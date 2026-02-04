@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/psds-microservice/user-service/internal/dto"
+	"github.com/psds-microservice/user-service/internal/errs"
 	"github.com/psds-microservice/user-service/internal/mapper"
 	"github.com/psds-microservice/user-service/internal/model"
 	"github.com/psds-microservice/user-service/pkg/constants"
@@ -74,7 +75,7 @@ func (s *userService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 			return nil, err
 		}
 		if existing != nil {
-			return nil, ErrUserAlreadyExists
+			return nil, errs.ErrUserAlreadyExists
 		}
 	}
 	existing, err := s.getByEmail(ctx, req.Email)
@@ -82,7 +83,7 @@ func (s *userService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		return nil, err
 	}
 	if existing != nil {
-		return nil, ErrUserAlreadyExists
+		return nil, errs.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := hashPassword(req.Password)
@@ -137,7 +138,7 @@ func (s *userService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, errs.ErrUserNotFound
 	}
 
 	if req.Username != "" {
@@ -186,7 +187,7 @@ func (s *userService) GetUser(ctx context.Context, id string) (*dto.UserResponse
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, errs.ErrUserNotFound
 	}
 	return mapper.UserToResponse(user), nil
 }
