@@ -13,34 +13,76 @@ import (
 	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
-// UserService — CRUD пользователей.
-type UserService struct {
+// UserService — контракт сервиса пользователей (CRUD).
+type UserService interface {
+	CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error)
+	GetUser(ctx context.Context, id string) (*dto.UserResponse, error)
+	UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error)
+	DeleteUser(ctx context.Context, id string) error
+	ListUsers(ctx context.Context, filters *dto.UserFilters) ([]*dto.UserResponse, int64, error)
+}
+
+type userService struct {
 	db *gorm.DB
 }
 
 // NewUserService создаёт сервис пользователей.
-func NewUserService(db *gorm.DB) *UserService {
-	return &UserService{db: db}
+func NewUserService(db *gorm.DB) UserService {
+	return &userService{db: db}
 }
 
-func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
-	if req.Username != "" {
-		var existing model.User
-		err := s.db.WithContext(ctx).Where("username = ?", req.Username).First(&existing).Error
-		if err == nil {
-			return nil, ErrUserAlreadyExists
+func (s *userService) getByID(ctx context.Context, id string) (*model.User, error) {
+	var u model.User
+	err := s.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
 		}
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *userService) getByEmail(ctx context.Context, email string) (*model.User, error) {
+	var u model.User
+	err := s.db.WithContext(ctx).Where("email = ?", email).First(&u).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *userService) getByUsername(ctx context.Context, username string) (*model.User, error) {
+	var u model.User
+	err := s.db.WithContext(ctx).Where("username = ?", username).First(&u).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *userService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
+	if req.Username != "" {
+		existing, err := s.getByUsername(ctx, req.Username)
+		if err != nil {
 			return nil, err
 		}
+		if existing != nil {
+			return nil, ErrUserAlreadyExists
+		}
 	}
-	var existing model.User
-	err := s.db.WithContext(ctx).Where("email = ?", req.Email).First(&existing).Error
-	if err == nil {
-		return nil, ErrUserAlreadyExists
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	existing, err := s.getByEmail(ctx, req.Email)
+	if err != nil {
 		return nil, err
+	}
+	if existing != nil {
+		return nil, ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := hashPassword(req.Password)
@@ -86,18 +128,16 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	return mapper.UserToResponse(user), nil
 }
 
-func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	id, err := uuid.Parse(req.ID)
-	if err != nil {
+func (s *userService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
+	if _, err := uuid.Parse(req.ID); err != nil {
 		return nil, ErrInvalidUserID
 	}
-	var user model.User
-	err = s.db.WithContext(ctx).Where("id = ?", id.String()).First(&user).Error
+	user, err := s.getByID(ctx, req.ID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
-		}
 		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
 	}
 
 	if req.Username != "" {
@@ -124,41 +164,37 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	user.Company = req.Company
 	user.Specialization = req.Specialization
 
-	if err := s.db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := s.db.WithContext(ctx).Save(user).Error; err != nil {
 		return nil, err
 	}
-	return mapper.UserToResponse(&user), nil
+	return mapper.UserToResponse(user), nil
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, id string) error {
-	uid, err := uuid.Parse(id)
-	if err != nil {
+func (s *userService) DeleteUser(ctx context.Context, id string) error {
+	if _, err := uuid.Parse(id); err != nil {
 		return ErrInvalidUserID
 	}
-	return s.db.WithContext(ctx).Delete(&model.User{}, "id = ?", uid.String()).Error
+	return s.db.WithContext(ctx).Delete(&model.User{}, "id = ?", id).Error
 }
 
-func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse, error) {
-	uid, err := uuid.Parse(id)
-	if err != nil {
+func (s *userService) GetUser(ctx context.Context, id string) (*dto.UserResponse, error) {
+	if _, err := uuid.Parse(id); err != nil {
 		return nil, ErrInvalidUserID
 	}
-	var user model.User
-	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
+	user, err := s.getByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
-		}
 		return nil, err
 	}
-	return mapper.UserToResponse(&user), nil
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+	return mapper.UserToResponse(user), nil
 }
 
-func (s *UserService) ListUsers(ctx context.Context, filters *dto.UserFilters) ([]*dto.UserResponse, int64, error) {
-	var users []*model.User
+func (s *userService) ListUsers(ctx context.Context, filters *dto.UserFilters) ([]*dto.UserResponse, int64, error) {
+	var list []*model.User
 	var count int64
 	query := s.db.WithContext(ctx).Model(&model.User{})
-
 	if filters != nil {
 		if filters.Status != "" {
 			query = query.Where("status = ?", filters.Status)
@@ -171,7 +207,6 @@ func (s *UserService) ListUsers(ctx context.Context, filters *dto.UserFilters) (
 			query = query.Where("username ILIKE ? OR email ILIKE ?", search, search)
 		}
 	}
-
 	if err := query.Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
@@ -183,13 +218,12 @@ func (s *UserService) ListUsers(ctx context.Context, filters *dto.UserFilters) (
 			query = query.Offset(filters.Offset)
 		}
 	}
-	if err := query.Find(&users).Error; err != nil {
+	if err := query.Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
-
-	var responses []*dto.UserResponse
-	for _, u := range users {
-		responses = append(responses, mapper.UserToResponse(u))
+	out := make([]*dto.UserResponse, len(list))
+	for i := range list {
+		out[i] = mapper.UserToResponse(list[i])
 	}
-	return responses, count, nil
+	return out, count, nil
 }

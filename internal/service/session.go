@@ -14,36 +14,68 @@ import (
 	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
-// SessionService — сессии пользователя.
-type SessionService struct {
+// SessionService — контракт сервиса сессий.
+type SessionService interface {
+	GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error)
+	GetActiveSessions(ctx context.Context, userID string) ([]*dto.UserSessionResponse, error)
+	CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error)
+	ValidateUserSession(ctx context.Context, userID, sessionExternalID, participantRole string) (bool, error)
+}
+
+type sessionService struct {
 	db *gorm.DB
 }
 
-// NewSessionService создаёт сервис сессий.
-func NewSessionService(db *gorm.DB) *SessionService {
-	return &SessionService{db: db}
+func NewSessionService(db *gorm.DB) SessionService {
+	return &sessionService{db: db}
 }
 
-func (s *SessionService) ValidateUserSession(ctx context.Context, userID, sessionExternalID, participantRole string) (allowed bool, err error) {
-	_, err = uuid.Parse(userID)
+func (s *sessionService) getUserByID(ctx context.Context, userID string) (*model.User, error) {
+	var u model.User
+	err := s.db.WithContext(ctx).Where("id = ?", userID).First(&u).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *sessionService) countActiveByUser(ctx context.Context, userID string) (int64, error) {
+	var count int64
+	err := s.db.WithContext(ctx).Model(&model.UserSession{}).Where("user_id = ? AND left_at IS NULL", userID).Count(&count).Error
+	return count, err
+}
+
+func (s *sessionService) findActiveByUserAndExternalID(ctx context.Context, userID, sessionExternalID string) (*model.UserSession, error) {
+	var sess model.UserSession
+	err := s.db.WithContext(ctx).Where("user_id = ? AND session_external_id = ? AND left_at IS NULL", userID, sessionExternalID).First(&sess).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &sess, nil
+}
+
+func (s *sessionService) ValidateUserSession(ctx context.Context, userID, sessionExternalID, participantRole string) (allowed bool, err error) {
+	if _, err := uuid.Parse(userID); err != nil {
 		return false, nil
 	}
-	var user model.User
-	err = s.db.WithContext(ctx).Where("id = ?", userID).First(&user).Error
-	if err != nil || !user.IsActive {
+	user, err := s.getUserByID(ctx, userID)
+	if err != nil || user == nil || !user.IsActive {
 		return false, nil
 	}
-	var existing model.UserSession
-	err = s.db.WithContext(ctx).Where("user_id = ? AND session_external_id = ? AND left_at IS NULL", userID, sessionExternalID).First(&existing).Error
-	if err == nil {
-		return true, nil
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	existing, err := s.findActiveByUserAndExternalID(ctx, userID, sessionExternalID)
+	if err != nil {
 		return false, err
 	}
-	var activeCount int64
-	err = s.db.WithContext(ctx).Model(&model.UserSession{}).Where("user_id = ? AND left_at IS NULL", userID).Count(&activeCount).Error
+	if existing != nil {
+		return true, nil
+	}
+	activeCount, err := s.countActiveByUser(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -56,7 +88,7 @@ func (s *SessionService) ValidateUserSession(ctx context.Context, userID, sessio
 	return true, nil
 }
 
-func (s *SessionService) GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error) {
+func (s *sessionService) GetUserSessions(ctx context.Context, userID string, limit, offset int) ([]*dto.UserSessionResponse, int64, error) {
 	var list []*model.UserSession
 	var count int64
 	q := s.db.WithContext(ctx).Model(&model.UserSession{}).Where("user_id = ?", userID)
@@ -80,7 +112,7 @@ func (s *SessionService) GetUserSessions(ctx context.Context, userID string, lim
 	return out, count, nil
 }
 
-func (s *SessionService) GetActiveSessions(ctx context.Context, userID string) ([]*dto.UserSessionResponse, error) {
+func (s *sessionService) GetActiveSessions(ctx context.Context, userID string) ([]*dto.UserSessionResponse, error) {
 	var list []*model.UserSession
 	err := s.db.WithContext(ctx).Where("user_id = ? AND left_at IS NULL", userID).Order("joined_at DESC").Find(&list).Error
 	if err != nil {
@@ -93,21 +125,18 @@ func (s *SessionService) GetActiveSessions(ctx context.Context, userID string) (
 	return out, nil
 }
 
-func (s *SessionService) CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error) {
-	uid, err := uuid.Parse(userID)
-	if err != nil {
+func (s *sessionService) CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error) {
+	if _, err := uuid.Parse(userID); err != nil {
 		return nil, ErrInvalidUserID
 	}
-	var user model.User
-	err = s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error
+	user, err := s.getUserByID(ctx, userID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
-		}
 		return nil, err
 	}
-	var activeCount int64
-	err = s.db.WithContext(ctx).Model(&model.UserSession{}).Where("user_id = ? AND left_at IS NULL", userID).Count(&activeCount).Error
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+	activeCount, err := s.countActiveByUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +148,7 @@ func (s *SessionService) CreateSession(ctx context.Context, userID string, req *
 	}
 	if int(activeCount) >= user.MaxSessions {
 		user.IsAvailable = false
-		_ = s.db.WithContext(ctx).Save(&user).Error
+		_ = s.db.WithContext(ctx).Save(user)
 		return nil, ErrMaxSessionsReached
 	}
 	session := &model.UserSession{
@@ -135,6 +164,6 @@ func (s *SessionService) CreateSession(ctx context.Context, userID string, req *
 	}
 	user.TotalSessions++
 	user.IsOnline = true
-	_ = s.db.WithContext(ctx).Save(&user).Error
+	_ = s.db.WithContext(ctx).Save(user)
 	return mapper.SessionToResponse(session), nil
 }

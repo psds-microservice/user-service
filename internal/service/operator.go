@@ -13,16 +13,35 @@ import (
 	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
-type OperatorService struct {
+// OperatorService — контракт сервиса операторов.
+type OperatorService interface {
+	ListAvailableOperators(ctx context.Context, limit, offset int) ([]*dto.UserResponse, int64, error)
+	UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error)
+	VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error)
+}
+
+type operatorService struct {
 	db *gorm.DB
 }
 
-func NewOperatorService(db *gorm.DB) *OperatorService {
-	return &OperatorService{db: db}
+func NewOperatorService(db *gorm.DB) OperatorService {
+	return &operatorService{db: db}
 }
 
-func (s *OperatorService) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*dto.UserResponse, int64, error) {
-	var users []*model.User
+func (s *operatorService) getByID(ctx context.Context, id string) (*model.User, error) {
+	var u model.User
+	err := s.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *operatorService) ListAvailableOperators(ctx context.Context, limit, offset int) ([]*dto.UserResponse, int64, error) {
+	var list []*model.User
 	var count int64
 	query := s.db.WithContext(ctx).Model(&model.User{}).
 		Where("role = ? AND operator_status = ? AND is_available = ? AND is_active = ?",
@@ -37,56 +56,54 @@ func (s *OperatorService) ListAvailableOperators(ctx context.Context, limit, off
 	if offset > 0 {
 		query = query.Offset(offset)
 	}
-	if err := query.Find(&users).Error; err != nil {
+	if err := query.Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
-	var out []*dto.UserResponse
-	for _, u := range users {
-		out = append(out, mapper.UserToResponse(u))
+	out := make([]*dto.UserResponse, len(list))
+	for i := range list {
+		out[i] = mapper.UserToResponse(list[i])
 	}
 	return out, count, nil
 }
 
-func (s *OperatorService) UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error) {
-	uid, err := uuid.Parse(userID)
-	if err != nil {
+func (s *operatorService) UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error) {
+	if _, err := uuid.Parse(userID); err != nil {
 		return nil, ErrInvalidUserID
 	}
-	var user model.User
-	if err := s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
-		}
+	user, err := s.getByID(ctx, userID)
+	if err != nil {
 		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
 	}
 	user.IsAvailable = available
-	if err := s.db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := s.db.WithContext(ctx).Save(user).Error; err != nil {
 		return nil, err
 	}
-	return mapper.UserToResponse(&user), nil
+	return mapper.UserToResponse(user), nil
 }
 
-func (s *OperatorService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
+func (s *operatorService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
 	if status != constants.OperatorStatusPending && status != constants.OperatorStatusVerified && status != constants.OperatorStatusBlocked {
 		return nil, ErrInvalidOperatorStatus
 	}
-	uid, err := uuid.Parse(operatorID)
-	if err != nil {
+	if _, err := uuid.Parse(operatorID); err != nil {
 		return nil, ErrInvalidUserID
 	}
-	var user model.User
-	if err := s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
-		}
+	user, err := s.getByID(ctx, operatorID)
+	if err != nil {
 		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
 	}
 	if user.Role != constants.RoleOperator {
 		return nil, ErrNotOperator
 	}
 	user.OperatorStatus = status
-	if err := s.db.WithContext(ctx).Save(&user).Error; err != nil {
+	if err := s.db.WithContext(ctx).Save(user).Error; err != nil {
 		return nil, err
 	}
-	return mapper.UserToResponse(&user), nil
+	return mapper.UserToResponse(user), nil
 }

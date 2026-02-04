@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/psds-microservice/helpy/db"
 	"github.com/psds-microservice/helpy/paths"
 	"github.com/psds-microservice/user-service/internal/auth"
 	"github.com/psds-microservice/user-service/internal/config"
@@ -66,16 +67,16 @@ func NewAPI(cfg *config.Config) (*API, error) {
 	if err := database.MigrateUp(cfg.DatabaseURL()); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
-	db, err := database.Open(cfg.DSN())
+	conn, err := db.Open(cfg.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("db: %w", err)
 	}
 
-	userSvc := service.NewUserService(db)
-	authSvc := service.NewAuthService(db)
-	operatorSvc := service.NewOperatorService(db)
-	presenceSvc := service.NewPresenceService(db)
-	sessionSvc := service.NewSessionService(db)
+	userSvc := service.NewUserService(conn)
+	authSvc := service.NewAuthService(conn)
+	operatorSvc := service.NewOperatorService(conn)
+	presenceSvc := service.NewPresenceService(conn)
+	sessionSvc := service.NewSessionService(conn)
 	val := validator.New()
 
 	jwtCfg, err := auth.NewConfig(cfg.JWTSecret, cfg.JWTAccess, cfg.JWTRefresh)

@@ -4,29 +4,28 @@ import (
 	"context"
 	"testing"
 
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
+	"github.com/psds-microservice/helpy/db"
 	"github.com/psds-microservice/user-service/internal/dto"
 	"github.com/psds-microservice/user-service/internal/model"
+	"gorm.io/gorm"
 )
 
 func testDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	conn, err := db.OpenInMemory()
 	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
+		t.Fatalf("open in-memory: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.UserSession{}); err != nil {
+	if err := conn.AutoMigrate(&model.User{}, &model.UserSession{}); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
-	return db
+	return conn
 }
 
 func TestUserAndAuth_CreateAndLogin(t *testing.T) {
-	db := testDB(t)
-	userSvc := NewUserService(db)
-	authSvc := NewAuthService(db)
+	conn := testDB(t)
+	userSvc := NewUserService(conn)
+	authSvc := NewAuthService(conn)
 	ctx := context.Background()
 
 	req := &dto.CreateUserRequest{

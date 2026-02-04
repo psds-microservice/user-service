@@ -11,28 +11,44 @@ import (
 	"github.com/psds-microservice/user-service/internal/model"
 )
 
-type PresenceService struct {
+// PresenceService — контракт сервиса presence (онлайн-статус).
+type PresenceService interface {
+	UpdatePresence(ctx context.Context, userID string, isOnline bool) error
+}
+
+type presenceService struct {
 	db *gorm.DB
 }
 
-func NewPresenceService(db *gorm.DB) *PresenceService {
-	return &PresenceService{db: db}
+func NewPresenceService(db *gorm.DB) PresenceService {
+	return &presenceService{db: db}
 }
 
-func (s *PresenceService) UpdatePresence(ctx context.Context, userID string, isOnline bool) error {
-	uid, err := uuid.Parse(userID)
+func (s *presenceService) getByID(ctx context.Context, id string) (*model.User, error) {
+	var u model.User
+	err := s.db.WithContext(ctx).Where("id = ?", id).First(&u).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *presenceService) UpdatePresence(ctx context.Context, userID string, isOnline bool) error {
+	if _, err := uuid.Parse(userID); err != nil {
 		return ErrInvalidUserID
 	}
-	var user model.User
-	if err := s.db.WithContext(ctx).Where("id = ?", uid.String()).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrUserNotFound
-		}
+	user, err := s.getByID(ctx, userID)
+	if err != nil {
 		return err
+	}
+	if user == nil {
+		return ErrUserNotFound
 	}
 	now := time.Now()
 	user.IsOnline = isOnline
 	user.LastSeenAt = &now
-	return s.db.WithContext(ctx).Save(&user).Error
+	return s.db.WithContext(ctx).Save(user).Error
 }

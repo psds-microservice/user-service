@@ -16,13 +16,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// Deps — зависимости gRPC-сервера (все сервисы и инфраструктура, DI из application).
+// Deps — зависимости gRPC-сервера (интерфейсы из service и инфраструктура, DI из application).
 type Deps struct {
-	User     *service.UserService
-	Auth     *service.AuthService
-	Operator *service.OperatorService
-	Presence *service.PresenceService
-	Session  *service.SessionService
+	User     service.UserService
+	Auth     service.AuthService
+	Operator service.OperatorService
+	Presence service.PresenceService
+	Session  service.SessionService
 
 	JWTConfig auth.Config
 	Blacklist *auth.Blacklist
