@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/psds-microservice/user-service/internal/auth"
@@ -17,6 +18,7 @@ import (
 	"github.com/psds-microservice/user-service/internal/handler"
 	"github.com/psds-microservice/user-service/internal/repository"
 	"github.com/psds-microservice/user-service/internal/service"
+	"github.com/psds-microservice/user-service/internal/validator"
 	"github.com/psds-microservice/user-service/pkg/constants"
 	"github.com/psds-microservice/user-service/pkg/gen/user_service"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -73,6 +75,7 @@ func NewAPI(cfg *config.Config) (*API, error) {
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewUserSessionRepository(db)
 	userSvc := service.NewUserService(userRepo, sessionRepo)
+	val := validator.New()
 
 	jwtCfg, err := auth.NewConfig(cfg.JWTSecret, cfg.JWTAccess, cfg.JWTRefresh)
 	if err != nil {
@@ -86,7 +89,7 @@ func NewAPI(cfg *config.Config) (*API, error) {
 		return nil, fmt.Errorf("grpc listen %s: %w (порт занят — остановите другой процесс или задайте GRPC_PORT в .env)", grpcAddr, err)
 	}
 	grpcSrv := grpc.NewServer()
-	gwImpl := grpcserver.NewServer(userSvc, jwtCfg, blacklist)
+	gwImpl := grpcserver.NewServer(userSvc, jwtCfg, blacklist, val)
 	user_service.RegisterUserServiceServer(grpcSrv, gwImpl)
 	reflection.Register(grpcSrv)
 
@@ -107,7 +110,14 @@ func NewAPI(cfg *config.Config) (*API, error) {
 	mux.Handle("/", gatewayMux)
 
 	httpAddr := cfg.AppHost + ":" + cfg.HTTPPort
-	httpSrv := &http.Server{Addr: httpAddr, Handler: mux}
+	httpSrv := &http.Server{
+		Addr:              httpAddr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 
 	return &API{
 		cfg:     cfg,
@@ -148,7 +158,9 @@ func (a *API) Run(ctx context.Context) error {
 	}()
 
 	<-ctx.Done()
-	if err := a.httpSrv.Shutdown(context.Background()); err != nil {
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := a.httpSrv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("http shutdown: %v", err)
 	}
 	a.grpcSrv.GracefulStop()

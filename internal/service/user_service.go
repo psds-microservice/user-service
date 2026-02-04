@@ -15,6 +15,19 @@ import (
 	"github.com/psds-microservice/user-service/pkg/constants"
 )
 
+// Сентинель-ошибки домена user-service для единообразного маппинга в транспортные коды (gRPC/HTTP).
+var (
+	ErrUserAlreadyExists              = errors.New("user already exists")
+	ErrInvalidUserID                  = errors.New("invalid user id")
+	ErrUserNotFound                   = errors.New("user not found")
+	ErrInvalidCredentials             = errors.New("invalid credentials")
+	ErrNotOperator                    = errors.New("user is not an operator")
+	ErrInvalidOperatorStatus          = errors.New("invalid operator status")
+	ErrClientStreamingLimit           = errors.New("client may have only one active streaming session")
+	ErrOperatorNotVerifiedOrAvailable = errors.New("operator must be verified and available")
+	ErrMaxSessionsReached             = errors.New("max_sessions reached")
+)
+
 type IUserService interface {
 	CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error)
 	UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error)
@@ -45,7 +58,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	if req.Username != "" {
 		existing, _ := s.repo.FindByUsername(ctx, req.Username)
 		if existing != nil {
-			return nil, errors.New("user with this username already exists")
+			return nil, ErrUserAlreadyExists
 		}
 	}
 	existing, err := s.repo.FindByEmail(ctx, req.Email)
@@ -53,7 +66,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		return nil, err
 	}
 	if existing != nil {
-		return nil, errors.New("user with this email already exists")
+		return nil, ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := hashPassword(req.Password)
@@ -104,14 +117,14 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
 	id, err := uuid.Parse(req.ID)
 	if err != nil {
-		return nil, errors.New("invalid user id")
+		return nil, ErrInvalidUserID
 	}
 	user, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 
 	if req.Username != "" {
@@ -149,7 +162,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
-		return errors.New("invalid user id")
+		return ErrInvalidUserID
 	}
 	return s.repo.Delete(ctx, uid)
 }
@@ -157,14 +170,14 @@ func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 func (s *UserService) GetUser(ctx context.Context, id string) (*dto.UserResponse, error) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
-		return nil, errors.New("invalid user id")
+		return nil, ErrInvalidUserID
 	}
 	user, err := s.repo.Get(ctx, uid)
 	if err != nil {
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	return mapper.UserToResponse(user), nil
 }
@@ -189,11 +202,11 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*dto.U
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("invalid credentials")
+		return nil, ErrInvalidCredentials
 	}
 
 	if !checkPassword(user.PasswordHash, password) {
-		return nil, errors.New("invalid credentials")
+		return nil, ErrInvalidCredentials
 	}
 
 	return mapper.UserToResponse(user), nil
@@ -214,14 +227,14 @@ func (s *UserService) ListAvailableOperators(ctx context.Context, limit, offset 
 func (s *UserService) UpdateAvailability(ctx context.Context, userID string, available bool) (*dto.UserResponse, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		return nil, errors.New("invalid user id")
+		return nil, ErrInvalidUserID
 	}
 	user, err := s.repo.Get(ctx, uid)
 	if err != nil || user == nil {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	if user.Role != constants.RoleOperator {
-		return nil, errors.New("user is not an operator")
+		return nil, ErrNotOperator
 	}
 	user.IsAvailable = available
 	updated, err := s.repo.Update(ctx, user)
@@ -233,18 +246,18 @@ func (s *UserService) UpdateAvailability(ctx context.Context, userID string, ava
 
 func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, status string) (*dto.UserResponse, error) {
 	if status != constants.OperatorStatusPending && status != constants.OperatorStatusVerified && status != constants.OperatorStatusBlocked {
-		return nil, errors.New("invalid operator status")
+		return nil, ErrInvalidOperatorStatus
 	}
 	uid, err := uuid.Parse(operatorID)
 	if err != nil {
-		return nil, errors.New("invalid operator id")
+		return nil, ErrInvalidUserID
 	}
 	user, err := s.repo.Get(ctx, uid)
 	if err != nil || user == nil {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	if user.Role != constants.RoleOperator {
-		return nil, errors.New("user is not an operator")
+		return nil, ErrNotOperator
 	}
 	user.OperatorStatus = status
 	updated, err := s.repo.Update(ctx, user)
@@ -257,11 +270,11 @@ func (s *UserService) VerifyOperator(ctx context.Context, operatorID string, sta
 func (s *UserService) UpdatePresence(ctx context.Context, userID string, isOnline bool) error {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		return errors.New("invalid user id")
+		return ErrInvalidUserID
 	}
 	user, err := s.repo.Get(ctx, uid)
 	if err != nil || user == nil {
-		return errors.New("user not found")
+		return ErrUserNotFound
 	}
 	now := time.Now()
 	user.IsOnline = isOnline
@@ -326,26 +339,26 @@ func (s *UserService) GetActiveSessions(ctx context.Context, userID string) ([]*
 func (s *UserService) CreateSession(ctx context.Context, userID string, req *dto.CreateSessionRequest) (*dto.UserSessionResponse, error) {
 	uid, err := uuid.Parse(userID)
 	if err != nil {
-		return nil, errors.New("invalid user id")
+		return nil, ErrInvalidUserID
 	}
 	user, err := s.repo.Get(ctx, uid)
 	if err != nil || user == nil {
-		return nil, errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	activeCount, err := s.sessionRepo.CountActiveByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	if user.Role == constants.RoleClient && req.SessionType == "streaming" && activeCount >= 1 {
-		return nil, errors.New("client may have only one active streaming session")
+		return nil, ErrClientStreamingLimit
 	}
 	if user.Role == constants.RoleOperator && (user.OperatorStatus != constants.OperatorStatusVerified || !user.IsAvailable) {
-		return nil, errors.New("operator must be verified and available")
+		return nil, ErrOperatorNotVerifiedOrAvailable
 	}
 	if int(activeCount) >= user.MaxSessions {
 		user.IsAvailable = false
 		_, _ = s.repo.Update(ctx, user)
-		return nil, errors.New("max_sessions reached")
+		return nil, ErrMaxSessionsReached
 	}
 	session := &model.UserSession{
 		ID:                uuid.New().String(),

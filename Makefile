@@ -334,7 +334,8 @@ install-deps:
 
 update:
 	@echo "🔄 Updating dependencies..."
-	go get -u ./...
+	go get -u ./... \
+		github.com/psds-microservice/helpy
 	go mod tidy
 	go mod vendor
 	$(MAKE) proto
