@@ -18,7 +18,7 @@ make proto-openapi
 
 ## Просмотр
 
-- После запуска сервиса: **http://localhost:8080/swagger/index.html**
+- После запуска сервиса: **http://localhost:8080/swagger**
 - Спека: **http://localhost:8080/swagger/openapi.json**
 
 Пути и методы в спецификации соответствуют аннотациям в `pkg/user_service/user_service.proto`.

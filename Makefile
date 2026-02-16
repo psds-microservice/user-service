@@ -80,22 +80,14 @@ proto-openapi:
 proto-http-paths:
 	@go run scripts/gen_http_paths.go
 
-## 📦 Proto файлы (образ из https://github.com/psds-microservice/infra)
+## 📦 Proto файлы (образ из vendor infra)
 proto: proto-build proto-generate
 
-# Сборка образа: из локального infra/ (submodule) или клонирование psds-microservice/infra.
-# Dockerfile в infra ожидает COPY infra/docker-entrypoint.sh — контекст должен содержать папку infra/ с этим файлом.
+# Сборка образа: из vendored infra (go mod vendor)
+INFRA_VENDOR := vendor/github.com/psds-microservice/infra
 proto-build:
-	@echo "📦 Building protoc-go image..."
-	@if [ -f infra/protoc-go.Dockerfile ]; then \
-		echo "Using local infra/ (submodule)..."; \
-		docker build -t $(PROTOC_IMAGE) -f infra/protoc-go.Dockerfile .; \
-	else \
-		echo "Cloning psds-microservice/infra..."; \
-		rm -rf build/infra-repo && mkdir -p build && git clone --depth 1 https://github.com/psds-microservice/infra.git build/infra-repo && \
-		mkdir -p build/infra-repo/infra && cp build/infra-repo/docker-entrypoint.sh build/infra-repo/infra/ && \
-		docker build -t $(PROTOC_IMAGE) -f build/infra-repo/protoc-go.Dockerfile build/infra-repo; \
-	fi
+	@echo "📦 Building protoc-go image (from $(INFRA_VENDOR))..."
+	@docker build -t $(PROTOC_IMAGE) -f $(INFRA_VENDOR)/protoc-go.Dockerfile $(INFRA_VENDOR)
 	@echo "✅ Docker image built"
 
 # Генерация: сначала пробуем локальный protoc (PATH + go install плагины), иначе Docker с обходом entrypoint
@@ -335,7 +327,8 @@ install-deps:
 update:
 	@echo "🔄 Updating dependencies..."
 	go get -u ./... \
-		github.com/psds-microservice/helpy
+		github.com/psds-microservice/helpy \
+		github.com/psds-microservice/infra
 	go mod tidy
 	go mod vendor
 	$(MAKE) proto

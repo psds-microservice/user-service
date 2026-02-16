@@ -149,7 +149,7 @@ func (a *API) Run(ctx context.Context) error {
 	}
 	httpBase := "http://" + host + ":" + a.cfg.HTTPPort
 	log.Printf("HTTP server listening on %s", httpAddr)
-	log.Printf("  Swagger UI:    %s/swagger/index.html", httpBase)
+	log.Printf("  Swagger UI:    %s/swagger", httpBase)
 	log.Printf("  Swagger spec:  %s/swagger/openapi.json", httpBase)
 	log.Printf("  Health:        %s/health", httpBase)
 	log.Printf("  Ready:         %s/ready", httpBase)
