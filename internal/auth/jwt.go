@@ -95,7 +95,7 @@ func (c Config) GeneratePair(userID, email, role, operatorStatus string, isAvail
 
 // ValidateAccess проверяет access токен и возвращает claims.
 func (c Config) ValidateAccess(tokenString string) (*Claims, error) {
-	tok, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+	tok, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -113,7 +113,7 @@ func (c Config) ValidateAccess(tokenString string) (*Claims, error) {
 
 // ValidateRefresh проверяет refresh токен и возвращает userID.
 func (c Config) ValidateRefresh(tokenString string) (userID string, err error) {
-	tok, err := jwt.ParseWithClaims(tokenString, &RefreshClaims{}, func(t *jwt.Token) (interface{}, error) {
+	tok, err := jwt.ParseWithClaims(tokenString, &RefreshClaims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
