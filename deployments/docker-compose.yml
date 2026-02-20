@@ -1,8 +1,8 @@
 services:
   app:
     build:
-      context: ..
-      dockerfile: deployments/Dockerfile
+      context: ../..
+      dockerfile: user-service/deployments/Dockerfile
     ports:
       - "8080:8080"
       - "9090:9090"
